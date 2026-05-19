@@ -1,418 +1,450 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
+  />
+  <meta name="theme-color" content="#0b0b0d" />
   <title>Phone Controller</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
   <style>
+    :root {
+      --bg: #0b0b0d;
+      --panel: #111214;
+      --panel-2: #16171a;
+      --btn: #18191d;
+      --btn-2: #0f1013;
+      --btn-active: #2a2d33;
+      --border: rgba(255, 255, 255, 0.2);
+      --border-strong: rgba(255, 255, 255, 0.35);
+      --text: #f2f2f2;
+      --muted: #b9bcc3;
+      --shadow: rgba(0, 0, 0, 0.55);
+      --gap: clamp(0.5rem, 1.2vw, 1rem);
+      --pad: clamp(0.75rem, 1.6vw, 1.25rem);
+      --topbar-h: clamp(3rem, 7vh, 4.5rem);
+      --radius: clamp(1rem, 2vw, 1.4rem);
+    }
+
     * {
       box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
       touch-action: none;
-      -webkit-tap-highlight-color: transparent;
     }
 
     html,
     body {
+      margin: 0;
       width: 100%;
       height: 100%;
-      margin: 0;
       overflow: hidden;
-      background: #080808;
-      color: #d8d8d8;
+      background: #000;
+      color: var(--text);
       font-family: Arial, Helvetica, sans-serif;
     }
 
     body {
+      background:
+        radial-gradient(circle at center, #1a1b20 0%, #0f1013 45%, #060607 100%);
+    }
+
+    .app {
+      width: 100%;
+      height: 100svh;
+      padding:
+        max(0.5rem, env(safe-area-inset-top))
+        max(0.5rem, env(safe-area-inset-right))
+        max(0.5rem, env(safe-area-inset-bottom))
+        max(0.5rem, env(safe-area-inset-left));
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-
-    :root {
-      --bg: #141414;
-      --button: #050505;
-      --button-soft: #0b0b0b;
-      --button-active: #1f1f1f;
-      --outline: #3a3a3a;
-      --text: #d5d5d5;
-      --muted: #7f7f7f;
-
-      --unit: min(1vw, 1.75vh);
-      --round: clamp(0.8rem, 1.6vw, 2rem);
     }
 
     .controller {
-      position: relative;
-      width: min(100dvw, calc(100dvh * 2.18));
-      height: min(100dvh, calc(100dvw / 2.18));
-      background: radial-gradient(circle at center, #181818, #0d0d0d 70%);
-      border-radius: clamp(1rem, 2vw, 2rem);
+      width: min(100%, 1800px);
+      height: 100%;
+      max-height: 900px;
+      background: linear-gradient(180deg, #17181c 0%, #0d0e11 100%);
+      border-radius: clamp(1rem, 2vw, 1.75rem);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.05),
+        0 1rem 2.5rem rgba(0,0,0,0.45);
+      display: grid;
+      grid-template-rows: var(--topbar-h) 1fr;
       overflow: hidden;
-    }
-
-    .control {
-      position: absolute;
-      border: none;
-      background: linear-gradient(145deg, #0c0c0c, #020202);
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      cursor: pointer;
-      box-shadow:
-        inset 0 0 0 0.08em rgba(255, 255, 255, 0.08),
-        0 0.45em 1.1em rgba(0, 0, 0, 0.65);
-    }
-
-    .control.active {
-      transform: scale(0.92);
-      background: linear-gradient(145deg, #2b2b2b, #080808);
-      box-shadow:
-        inset 0 0 1.2em rgba(255, 255, 255, 0.08),
-        0 0.2em 0.6em rgba(0, 0, 0, 0.85);
-    }
-
-    .round-btn {
-      border-radius: 50%;
-      font-size: clamp(1.3rem, 4vw, 4rem);
-    }
-
-    .small-icon {
-      width: 5.2%;
-      aspect-ratio: 1;
-      border-radius: 50%;
-      font-size: clamp(1rem, 2.6vw, 2.5rem);
-      color: #b8b8b8;
-      background: transparent;
-      box-shadow: none;
-    }
-
-    .small-icon.active {
-      background: #161616;
-    }
-
-    .label-button {
-      width: 8%;
-      aspect-ratio: 1;
-      border-radius: 50%;
-      font-size: clamp(1.2rem, 4.4vw, 4.2rem);
-      color: #d0d0d0;
-    }
-
-    .bumper {
-      width: 8%;
-      aspect-ratio: 1;
-      border-radius: 50%;
-      font-size: clamp(1rem, 3.5vw, 3.8rem);
-    }
-
-    .stick-area {
-      width: 17.5%;
-      aspect-ratio: 1;
-      border-radius: 50%;
-      background: #050505;
-      border: clamp(0.18rem, 0.45vw, 0.55rem) solid var(--outline);
-      box-shadow:
-        inset 0 0 1.2em rgba(255, 255, 255, 0.04),
-        0 0.7em 1.3em rgba(0, 0, 0, 0.6);
-    }
-
-    .stick-knob {
-      width: 46%;
-      aspect-ratio: 1;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, #1d1d1d, #030303 70%);
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      box-shadow:
-        inset 0 0 0.7em rgba(255, 255, 255, 0.08),
-        0 0.35em 0.7em rgba(0, 0, 0, 0.8);
-    }
-
-    .dpad {
-      position: absolute;
-      left: 13.2%;
-      top: 8.3%;
-      width: 18%;
-      aspect-ratio: 1;
-    }
-
-    .dpad button {
-      position: absolute;
-      width: 36%;
-      height: 36%;
-      border: none;
-      background: linear-gradient(145deg, #0c0c0c, #010101);
-      color: transparent;
-      box-shadow:
-        inset 0 0 0 0.08em rgba(255, 255, 255, 0.08),
-        0 0.45em 1em rgba(0, 0, 0, 0.6);
-    }
-
-    .dpad button.active {
-      transform: scale(0.92);
-      background: #252525;
-    }
-
-    .dpad-up {
-      left: 32%;
-      top: 0;
-      border-radius: 28% 28% 42% 42%;
-    }
-
-    .dpad-down {
-      left: 32%;
-      bottom: 0;
-      border-radius: 42% 42% 28% 28%;
-    }
-
-    .dpad-left {
-      left: 0;
-      top: 32%;
-      border-radius: 28% 42% 42% 28%;
-    }
-
-    .dpad-right {
-      right: 0;
-      top: 32%;
-      border-radius: 42% 28% 28% 42%;
-    }
-
-    .action-cluster {
-      position: absolute;
-      right: 5.2%;
-      bottom: 7%;
-      width: 22%;
-      aspect-ratio: 1;
-    }
-
-    .action-cluster .round-btn {
-      width: 30%;
-      aspect-ratio: 1;
-      font-size: clamp(1.1rem, 4.5vw, 4.5rem);
-    }
-
-    .action-y {
-      left: 35%;
-      top: 0;
-    }
-
-    .action-x {
-      left: 0;
-      top: 35%;
-    }
-
-    .action-b {
-      right: 0;
-      top: 35%;
-    }
-
-    .action-a {
-      left: 35%;
-      bottom: 0;
-    }
-
-    .top-settings {
-      left: 34.5%;
-      top: 4.7%;
-    }
-
-    .top-circle-1 {
-      left: 43.6%;
-      top: 4.7%;
-    }
-
-    .top-circle-2 {
-      left: 52.6%;
-      top: 4.7%;
-    }
-
-    .top-wireless {
-      left: 61.5%;
-      top: 4.7%;
-      opacity: 0.45;
-    }
-
-    .mid-left {
-      left: 36.7%;
-      top: 32.5%;
-    }
-
-    .mid-home {
-      left: 47.1%;
-      top: 32.5%;
-      outline: clamp(0.12rem, 0.28vw, 0.35rem) solid var(--outline);
-      outline-offset: -0.45em;
-    }
-
-    .mid-right {
-      left: 57.5%;
-      top: 32.5%;
-    }
-
-    .left-stick {
-      left: 4.5%;
-      bottom: 7%;
-    }
-
-    .right-stick {
-      right: 16.2%;
-      top: 9%;
-    }
-
-    .ls {
-      left: 2.8%;
-      top: 32.5%;
-    }
-
-    .rs {
-      right: 4.6%;
-      top: 32.5%;
-    }
-
-    .lb {
-      left: 23.7%;
-      bottom: 28.4%;
-    }
-
-    .lt {
-      left: 23.7%;
-      bottom: 6.3%;
-    }
-
-    .rb {
-      right: 27.5%;
-      bottom: 28.4%;
-    }
-
-    .rt {
-      right: 27.5%;
-      bottom: 6.3%;
+      position: relative;
     }
 
     .status {
       position: absolute;
-      left: 1.2%;
-      top: 1.4%;
-      font-size: clamp(0.65rem, 1.3vw, 1rem);
-      color: #666;
-      z-index: 10;
+      top: 0.55rem;
+      left: 0.75rem;
+      font-size: clamp(0.72rem, 1vw, 0.9rem);
+      color: #d4d7dd;
+      opacity: 0.9;
+      z-index: 20;
     }
 
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(0.7rem, 2vw, 1.6rem);
+      padding: 0 var(--pad);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0));
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.15fr 0.9fr 1.15fr;
+      gap: var(--gap);
+      padding: 0 var(--pad) var(--pad);
+      min-height: 0;
+    }
+
+    .panel {
+      position: relative;
+      min-height: 0;
+      border-radius: var(--radius);
+    }
+
+    .center-panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .center-row {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: clamp(1rem, 3vw, 2.4rem);
+      align-items: center;
+      margin-top: -2vh;
+    }
+
+    button,
+    .stick {
+      border: none;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .ctrl-btn,
+    .icon-btn,
+    .dpad-btn,
+    .stick,
+    .label-btn {
+      background: linear-gradient(180deg, var(--btn) 0%, var(--btn-2) 100%);
+      color: var(--text);
+      border: 1px solid var(--border);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.07),
+        0 0.35rem 1rem var(--shadow);
+    }
+
+    .ctrl-btn.active,
+    .icon-btn.active,
+    .dpad-btn.active,
+    .stick.active,
+    .label-btn.active {
+      background: linear-gradient(180deg, #2f333a 0%, var(--btn-active) 100%);
+      border-color: var(--border-strong);
+      transform: scale(0.96);
+    }
+
+    .icon-btn {
+      width: clamp(2.2rem, 4.5vw, 3.2rem);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      font-size: clamp(1rem, 2vw, 1.4rem);
+      display: grid;
+      place-items: center;
+      color: #eef0f3;
+    }
+
+    .left-panel,
+    .right-panel {
+      position: relative;
+    }
+
+    /* LEFT SIDE */
+    .ls-btn {
+      position: absolute;
+      left: 2%;
+      top: 33%;
+      width: 19%;
+      aspect-ratio: 1;
+    }
+
+    .left-stick {
+      position: absolute;
+      left: 5%;
+      bottom: 5%;
+      width: 46%;
+      aspect-ratio: 1;
+    }
+
+    .dpad {
+      position: absolute;
+      left: 36%;
+      top: 6%;
+      width: 38%;
+      aspect-ratio: 1;
+    }
+
+    .lb-btn {
+      position: absolute;
+      left: 58%;
+      bottom: 26%;
+      width: 19%;
+      aspect-ratio: 1;
+    }
+
+    .lt-btn {
+      position: absolute;
+      left: 58%;
+      bottom: 6%;
+      width: 19%;
+      aspect-ratio: 1;
+    }
+
+    /* RIGHT SIDE */
+    .right-stick {
+      position: absolute;
+      left: 12%;
+      top: 7%;
+      width: 46%;
+      aspect-ratio: 1;
+    }
+
+    .rs-btn {
+      position: absolute;
+      right: 2%;
+      top: 33%;
+      width: 19%;
+      aspect-ratio: 1;
+    }
+
+    .rb-btn {
+      position: absolute;
+      left: 8%;
+      bottom: 26%;
+      width: 19%;
+      aspect-ratio: 1;
+    }
+
+    .rt-btn {
+      position: absolute;
+      left: 8%;
+      bottom: 6%;
+      width: 19%;
+      aspect-ratio: 1;
+    }
+
+    .actions {
+      position: absolute;
+      right: 2%;
+      bottom: 5%;
+      width: 48%;
+      aspect-ratio: 1;
+    }
+
+    .round-grid-btn {
+      position: absolute;
+      width: 38%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      font-weight: 900;
+      font-size: clamp(1.5rem, 4.5vw, 3.2rem);
+      display: grid;
+      place-items: center;
+    }
+
+    .y-btn { top: 0; left: 31%; }
+    .x-btn { top: 31%; left: 0; }
+    .b-btn { top: 31%; right: 0; }
+    .a-btn { bottom: 0; left: 31%; }
+
+    .label-btn {
+      border-radius: 50%;
+      font-weight: 900;
+      font-size: clamp(1.2rem, 4vw, 3rem);
+      display: grid;
+      place-items: center;
+    }
+
+    /* DPAD */
+    .dpad-btn {
+      position: absolute;
+      width: 36%;
+      height: 36%;
+      border-radius: 28%;
+      display: grid;
+      place-items: center;
+      font-size: clamp(0.8rem, 2vw, 1.2rem);
+      color: #dce0e7;
+    }
+
+    .dpad-up { left: 32%; top: 0; }
+    .dpad-left { left: 0; top: 32%; }
+    .dpad-right { right: 0; top: 32%; }
+    .dpad-down { left: 32%; bottom: 0; }
+
+    /* STICKS */
+    .stick {
+      border-radius: 50%;
+      position: relative;
+      display: block;
+      border: 2px solid rgba(255,255,255,0.22);
+      background:
+        radial-gradient(circle at 50% 50%, #14161a 0%, #0c0d10 70%, #090a0c 100%);
+    }
+
+    .stick::before {
+      content: "";
+      position: absolute;
+      inset: 7%;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .stick-knob {
+      position: absolute;
+      width: 42%;
+      aspect-ratio: 1;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 30%, #353942 0%, #1c1f25 35%, #0d0f13 100%);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        0 0.35rem 0.8rem rgba(0,0,0,0.45);
+      pointer-events: none;
+    }
+
+    /* CENTER BUTTONS */
+    .mid-btn {
+      width: clamp(3rem, 6vw, 4.5rem);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      font-weight: 900;
+      font-size: clamp(1rem, 2.2vw, 1.8rem);
+      display: grid;
+      place-items: center;
+    }
+
+    /* PORTRAIT MESSAGE */
     .rotate-hint {
       display: none;
     }
 
     @media (orientation: portrait) {
-      .controller {
-        width: 100dvw;
-        height: 100dvh;
-        border-radius: 0;
+      .layout,
+      .topbar,
+      .status {
+        display: none;
       }
 
       .rotate-hint {
-        display: flex;
-        position: absolute;
-        inset: 0;
-        z-index: 100;
-        background: #080808;
-        color: #ddd;
-        align-items: center;
-        justify-content: center;
+        display: grid;
+        place-items: center;
         text-align: center;
         padding: 2rem;
-        font-size: clamp(1.1rem, 5vw, 2rem);
+        font-size: clamp(1.2rem, 5vw, 2rem);
+        color: #f0f0f0;
       }
     }
 
-    @media (max-aspect-ratio: 1.8/1) and (orientation: landscape) {
-      .action-cluster {
-        right: 3%;
-        width: 20%;
+    @media (max-width: 1000px) and (orientation: landscape) {
+      .layout {
+        grid-template-columns: 1.08fr 0.84fr 1.08fr;
       }
 
-      .dpad {
-        left: 11.5%;
-        width: 17%;
-      }
-
-      .left-stick {
-        left: 3.5%;
-      }
-
-      .right-stick {
-        right: 15%;
-      }
-
-      .lb,
-      .lt {
-        left: 24.5%;
-      }
-
-      .rb,
-      .rt {
-        right: 28.5%;
+      .center-row {
+        gap: clamp(0.8rem, 2vw, 1.4rem);
       }
     }
   </style>
 </head>
-
 <body>
-  <main class="controller">
-    <div class="status" id="status">Connecting...</div>
+  <div class="app">
+    <main class="controller">
+      <div class="status" id="status">Connecting...</div>
 
-    <div class="rotate-hint">
-      Rotate your phone sideways for the controller layout.
-    </div>
+      <div class="topbar">
+        <button class="icon-btn" data-action="settings">⚙</button>
+        <button class="icon-btn" data-action="top1">○</button>
+        <button class="icon-btn" data-action="top2">○</button>
+        <button class="icon-btn" data-action="wireless">⌁</button>
+      </div>
 
-    <section class="dpad">
-      <button class="dpad-up control-pad" data-action="up"></button>
-      <button class="dpad-left control-pad" data-action="left"></button>
-      <button class="dpad-right control-pad" data-action="right"></button>
-      <button class="dpad-down control-pad" data-action="down"></button>
-    </section>
+      <div class="layout">
+        <!-- LEFT -->
+        <section class="panel left-panel">
+          <button class="label-btn ls-btn" data-action="ls_button">LS</button>
 
-    <button class="control small-icon top-settings" data-action="settings">⚙</button>
-    <button class="control small-icon top-circle-1" data-action="select">○</button>
-    <button class="control small-icon top-circle-2" data-action="start">○</button>
-    <button class="control small-icon top-wireless" data-action="wireless">⌁</button>
+          <div class="stick left-stick" data-stick="left">
+            <div class="stick-knob"></div>
+          </div>
 
-    <button class="control small-icon mid-left" data-action="back">←</button>
-    <button class="control small-icon mid-home" data-action="home">⟳</button>
-    <button class="control small-icon mid-right" data-action="play">▶</button>
+          <div class="dpad">
+            <button class="dpad-btn dpad-up" data-action="up"></button>
+            <button class="dpad-btn dpad-left" data-action="left"></button>
+            <button class="dpad-btn dpad-right" data-action="right"></button>
+            <button class="dpad-btn dpad-down" data-action="down"></button>
+          </div>
 
-    <button class="control label-button ls" data-action="ls_button">LS</button>
-    <button class="control label-button rs" data-action="rs_button">RS</button>
+          <button class="label-btn lb-btn" data-action="lb">LB</button>
+          <button class="label-btn lt-btn" data-action="lt">LT</button>
+        </section>
 
-    <button class="control bumper lb" data-action="lb">LB</button>
-    <button class="control bumper lt" data-action="lt">LT</button>
-    <button class="control bumper rb" data-action="rb">RB</button>
-    <button class="control bumper rt" data-action="rt">RT</button>
+        <!-- CENTER -->
+        <section class="panel center-panel">
+          <div class="center-row">
+            <button class="ctrl-btn mid-btn" data-action="back">←</button>
+            <button class="ctrl-btn mid-btn" data-action="home">⟳</button>
+            <button class="ctrl-btn mid-btn" data-action="play">▶</button>
+          </div>
+        </section>
 
-    <div class="control stick-area left-stick" data-stick="left">
-      <div class="stick-knob"></div>
-    </div>
+        <!-- RIGHT -->
+        <section class="panel right-panel">
+          <div class="stick right-stick" data-stick="right">
+            <div class="stick-knob"></div>
+          </div>
 
-    <div class="control stick-area right-stick" data-stick="right">
-      <div class="stick-knob"></div>
-    </div>
+          <button class="label-btn rs-btn" data-action="rs_button">RS</button>
 
-    <section class="action-cluster">
-      <button class="control round-btn action-y" data-action="y">Y</button>
-      <button class="control round-btn action-x" data-action="x">X</button>
-      <button class="control round-btn action-b" data-action="b">B</button>
-      <button class="control round-btn action-a" data-action="a">A</button>
-    </section>
-  </main>
+          <button class="label-btn rb-btn" data-action="rb">RB</button>
+          <button class="label-btn rt-btn" data-action="rt">RT</button>
+
+          <div class="actions">
+            <button class="ctrl-btn round-grid-btn y-btn" data-action="y">Y</button>
+            <button class="ctrl-btn round-grid-btn x-btn" data-action="x">X</button>
+            <button class="ctrl-btn round-grid-btn b-btn" data-action="b">B</button>
+            <button class="ctrl-btn round-grid-btn a-btn" data-action="a">A</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="rotate-hint">
+        Rotate your phone to landscape for the controller.
+      </div>
+    </main>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
-
   <script>
     const socket = io();
     const statusText = document.getElementById("status");
@@ -426,7 +458,7 @@
       statusText.textContent = "Disconnected";
     });
 
-    function emitControl(action, state) {
+    function emitButton(action, state) {
       socket.emit("control", {
         type: "button",
         action,
@@ -438,7 +470,6 @@
 
     function pressButton(button, pointerId) {
       const action = button.dataset.action;
-
       if (!action) return;
 
       try {
@@ -448,19 +479,18 @@
       if (!pressedButtons.has(action)) {
         pressedButtons.add(action);
         button.classList.add("active");
-        emitControl(action, "pressed");
+        emitButton(action, "pressed");
       }
     }
 
     function releaseButton(button) {
       const action = button.dataset.action;
-
       if (!action) return;
 
       if (pressedButtons.has(action)) {
         pressedButtons.delete(action);
         button.classList.remove("active");
-        emitControl(action, "released");
+        emitButton(action, "released");
       }
     }
 
@@ -501,7 +531,7 @@
       }
 
       function moveStick(event) {
-        if (activePointer !== event.pointerId) return;
+        if (event.pointerId !== activePointer) return;
 
         const rect = stick.getBoundingClientRect();
         const radius = rect.width / 2;
@@ -511,21 +541,20 @@
         let dx = event.clientX - centerX;
         let dy = event.clientY - centerY;
 
+        const maxDistance = radius * 0.42;
         const distance = Math.hypot(dx, dy);
-        const maxDistance = radius * 0.48;
 
         if (distance > maxDistance) {
           dx = (dx / distance) * maxDistance;
           dy = (dy / distance) * maxDistance;
         }
 
-        const normalizedX = +(dx / maxDistance).toFixed(2);
-        const normalizedY = +(-dy / maxDistance).toFixed(2);
+        const x = +(dx / maxDistance).toFixed(2);
+        const y = +(-dy / maxDistance).toFixed(2);
 
         knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
         stick.classList.add("active");
-
-        sendStick(normalizedX, normalizedY);
+        sendStick(x, y);
       }
 
       function resetStick() {
@@ -537,7 +566,6 @@
 
       stick.addEventListener("pointerdown", (event) => {
         event.preventDefault();
-
         activePointer = event.pointerId;
 
         try {
@@ -554,12 +582,12 @@
 
       stick.addEventListener("pointerup", (event) => {
         event.preventDefault();
-        if (activePointer === event.pointerId) resetStick();
+        if (event.pointerId === activePointer) resetStick();
       });
 
       stick.addEventListener("pointercancel", (event) => {
         event.preventDefault();
-        if (activePointer === event.pointerId) resetStick();
+        if (event.pointerId === activePointer) resetStick();
       });
 
       stick.addEventListener("lostpointercapture", resetStick);
