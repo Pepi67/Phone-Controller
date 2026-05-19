@@ -4,8 +4,8 @@
   "description": "Use ur phone as a controller",
   "main": "server.js",
   "scripts": {
-  "start": "node server.js"
-},
+    "start": "node server.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Pepi67/Phone-Controller.git"
@@ -19,6 +19,7 @@
   "homepage": "https://github.com/Pepi67/Phone-Controller#readme",
   "dependencies": {
     "express": "^5.2.1",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "vigemclient": "^1.5.3"
   }
 }

@@ -15,7 +15,7 @@ import {
 const SOCKET_URL = `${window.location.protocol}//${window.location.hostname}:3000`;
 
 const buttonBaseClass = `
-  flex select-none items-center justify-center
+  flex select-none appearance-none items-center justify-center p-0
   border border-white/30 bg-zinc-800 text-white
   shadow-[0_8px_22px_rgba(0,0,0,0.58),inset_0_1px_0_rgba(255,255,255,0.16)]
   outline-none transition-colors
@@ -29,22 +29,33 @@ function ControllerButton({
   onSend,
 }) {
   const [active, setActive] = useState(false);
-  const pointerId = useRef(null);
+  const pressedRef = useRef(false);
+  const pointerIdRef = useRef(null);
 
-  function sendState(state) {
-    onSend({
-      type: "button",
-      action,
-      state,
-    });
+  function sendState(state, pointerId) {
+    onSend(
+      {
+        type: "button",
+        action,
+        state,
+      },
+      { pointerId },
+    );
   }
 
   function press(event) {
     event.preventDefault();
+    event.stopPropagation();
 
-    if (pointerId.current !== null) return;
+    if (pressedRef.current) {
+      console.log(
+        `FRONTEND IGNORED DUPLICATE PRESS: ${action} pointerId=${event.pointerId}`,
+      );
+      return;
+    }
 
-    pointerId.current = event.pointerId;
+    pressedRef.current = true;
+    pointerIdRef.current = event.pointerId;
 
     try {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -54,24 +65,61 @@ function ControllerButton({
 
     setActive(true);
     navigator.vibrate?.(12);
-    sendState("pressed");
+    console.log(`FRONTEND SEND: button ${action} pressed pointerId=${event.pointerId}`);
+    sendState("pressed", event.pointerId);
   }
 
   function release(event) {
     event?.preventDefault();
+    event?.stopPropagation();
 
-    if (pointerId.current === null) return;
-    if (event && pointerId.current !== event.pointerId) return;
+    if (!pressedRef.current) {
+      console.log(
+        `FRONTEND IGNORED DUPLICATE RELEASE: ${action} pointerId=${event?.pointerId ?? "none"}`,
+      );
+      return;
+    }
 
-    pointerId.current = null;
+    if (event && event.pointerId !== pointerIdRef.current) {
+      console.log(
+        `FRONTEND IGNORED WRONG POINTER RELEASE: ${action} pointerId=${event.pointerId}`,
+      );
+      return;
+    }
+
+    const releasedPointerId = pointerIdRef.current;
+    pressedRef.current = false;
+    pointerIdRef.current = null;
     setActive(false);
-    sendState("released");
+
+    if (
+      event?.currentTarget &&
+      releasedPointerId !== null &&
+      event.currentTarget.hasPointerCapture?.(releasedPointerId)
+    ) {
+      try {
+        event.currentTarget.releasePointerCapture(releasedPointerId);
+      } catch {
+        // Capture may already be gone by the time release is handled.
+      }
+    }
+
+    console.log(`FRONTEND SEND: button ${action} released pointerId=${releasedPointerId}`);
+    sendState("released", releasedPointerId);
   }
 
   return (
     <motion.button
       type="button"
       aria-label={label ?? action}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      }}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      }}
       onPointerDown={press}
       onPointerUp={release}
       onPointerCancel={release}
@@ -353,7 +401,11 @@ function CenterButton({ action, children, label, onSend }) {
 
 export default function App() {
   const socketRef = useRef(null);
+  const pressedButtonsRef = useRef(new Set());
   const [connected, setConnected] = useState(false);
+  const [playerNumber, setPlayerNumber] = useState(null);
+  const [rejectedReason, setRejectedReason] = useState("");
+  const [players, setPlayers] = useState([]);
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
 
   useEffect(() => {
@@ -362,8 +414,28 @@ export default function App() {
     });
 
     socketRef.current = socket;
-    socket.on("connect", () => setConnected(true));
-    socket.on("disconnect", () => setConnected(false));
+    socket.on("connect", () => {
+      setConnected(true);
+      setPlayerNumber(null);
+      setRejectedReason("");
+    });
+    socket.on("disconnect", () => {
+      setConnected(false);
+      setPlayerNumber(null);
+      setRejectedReason("");
+      setPlayers([]);
+    });
+    socket.on("player-assigned", ({ playerNumber: assignedPlayerNumber }) => {
+      setPlayerNumber(assignedPlayerNumber);
+      setRejectedReason("");
+    });
+    socket.on("player-rejected", ({ reason }) => {
+      setPlayerNumber(null);
+      setRejectedReason(reason ?? "No free player slots");
+    });
+    socket.on("players-updated", ({ players: updatedPlayers = [] }) => {
+      setPlayers(updatedPlayers);
+    });
 
     return () => {
       socket.disconnect();
@@ -380,11 +452,44 @@ export default function App() {
     return () => document.removeEventListener("fullscreenchange", syncFullscreenState);
   }, []);
 
-  function send(data) {
+  function send(data, debug = {}) {
+    if (data.type === "button") {
+      const pressedButtons = pressedButtonsRef.current;
+      const isPressed = pressedButtons.has(data.action);
+      const pointerText = `pointerId=${debug.pointerId ?? "none"}`;
+
+      if (data.state === "pressed") {
+        if (isPressed) {
+          console.log(
+            `FRONTEND IGNORED DUPLICATE PRESS: ${data.action} ${pointerText}`,
+          );
+          return;
+        }
+        pressedButtons.add(data.action);
+      }
+
+      if (data.state === "released") {
+        if (!isPressed) {
+          console.log(
+            `FRONTEND IGNORED DUPLICATE RELEASE: ${data.action} ${pointerText}`,
+          );
+          return;
+        }
+        pressedButtons.delete(data.action);
+      }
+    }
+
     socketRef.current?.emit("control", {
       ...data,
       time: Date.now(),
     });
+  }
+
+  function getStatusText() {
+    if (!connected) return "Disconnected";
+    if (playerNumber) return `Connected • Player ${playerNumber}`;
+    if (rejectedReason) return "Waiting • no free slots";
+    return "Connected • assigning player";
   }
 
   async function toggleFullscreen() {
@@ -419,10 +524,11 @@ export default function App() {
           <div className="absolute left-[clamp(0.55rem,1.4vw,1rem)] top-[clamp(0.45rem,1.4svh,0.8rem)] z-20 flex items-center gap-2 text-[clamp(0.68rem,2.2svh,0.95rem)] font-bold text-white/85">
             <span
               className={`h-2.5 w-2.5 rounded-full ${
-                connected ? "bg-emerald-400" : "bg-red-500"
+                connected && !rejectedReason ? "bg-emerald-400" : "bg-red-500"
               }`}
             />
-            <span>{connected ? "Connected" : "Disconnected"}</span>
+            <span>{getStatusText()}</span>
+            <span className="text-white/45">{players.length}/4</span>
           </div>
 
           <div className="absolute left-1/2 top-[8%] z-20 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-[clamp(0.35rem,1vw,0.75rem)]">
