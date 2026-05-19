@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Phone Controller</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 30px;
+      margin: 0;
+    }
+
+    button {
+      width: 120px;
+      height: 80px;
+      margin: 10px;
+      font-size: 28px;
+      border: none;
+      border-radius: 18px;
+      background: #333;
+      color: white;
+    }
+
+    button:active {
+      background: #777;
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+<body>
+  <h1>Phone Controller</h1>
+
+  <div>
+    <button onclick="sendCommand('up')">↑</button>
+  </div>
+
+  <div>
+    <button onclick="sendCommand('left')">←</button>
+    <button onclick="sendCommand('down')">↓</button>
+    <button onclick="sendCommand('right')">→</button>
+  </div>
+
+  <div>
+    <button onclick="sendCommand('a')">A</button>
+    <button onclick="sendCommand('b')">B</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    function sendCommand(action) {
+      socket.emit("control", {
+        action: action,
+        time: Date.now()
+      });
+    }
+  </script>
+</body>
+</html>
