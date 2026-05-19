@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { motion } from "framer-motion";
 import {
+  ArrowDown,
   ArrowLeft,
+  ArrowRight,
+  ArrowUp,
   Circle,
   Maximize,
   Minimize,
@@ -14,6 +17,8 @@ import {
 } from "lucide-react";
 
 const SOCKET_URL = `${window.location.protocol}//${window.location.hostname}:3000`;
+const LAYOUT_STORAGE_KEY = "controllerLayout";
+const VALID_LAYOUTS = new Set(["default", "overcooked"]);
 
 const buttonBaseClass = `
   flex select-none appearance-none items-center justify-center p-0
@@ -21,6 +26,18 @@ const buttonBaseClass = `
   shadow-[0_8px_22px_rgba(0,0,0,0.58),inset_0_1px_0_rgba(255,255,255,0.16)]
   outline-none transition-colors
 `;
+
+function normalizeLayout(layout) {
+  return VALID_LAYOUTS.has(layout) ? layout : "default";
+}
+
+function getInitialLayout() {
+  try {
+    return normalizeLayout(window.localStorage?.getItem(LAYOUT_STORAGE_KEY));
+  } catch {
+    return "default";
+  }
+}
 
 function ControllerButton({
   action,
@@ -281,44 +298,59 @@ function Stick({ name, onSend, className = "" }) {
   );
 }
 
-function DPad({ onSend }) {
+function DPad({
+  buttonClassName = "rounded-2xl",
+  onSend,
+  showIcons = false,
+  sizeClass = "w-[clamp(7.6rem,39svh,14.5rem)]",
+}) {
+  const iconClass = "h-[52%] w-[52%]";
+
   return (
     <div
-      className="
-        grid aspect-square w-[clamp(7.6rem,39svh,14.5rem)] max-h-full max-w-full
+      className={`
+        grid aspect-square ${sizeClass} max-h-full max-w-full
         grid-cols-3 grid-rows-3 gap-[clamp(0.28rem,1.15svh,0.65rem)]
-      "
+      `}
     >
       <div />
       <ControllerButton
         action="up"
         label="D-pad up"
         onSend={onSend}
-        className="rounded-2xl"
-      />
+        className={buttonClassName}
+      >
+        {showIcons ? <ArrowUp className={iconClass} /> : null}
+      </ControllerButton>
       <div />
 
       <ControllerButton
         action="left"
         label="D-pad left"
         onSend={onSend}
-        className="rounded-2xl"
-      />
+        className={buttonClassName}
+      >
+        {showIcons ? <ArrowLeft className={iconClass} /> : null}
+      </ControllerButton>
       <div className="rounded-2xl border border-white/10 bg-black/45" />
       <ControllerButton
         action="right"
         label="D-pad right"
         onSend={onSend}
-        className="rounded-2xl"
-      />
+        className={buttonClassName}
+      >
+        {showIcons ? <ArrowRight className={iconClass} /> : null}
+      </ControllerButton>
 
       <div />
       <ControllerButton
         action="down"
         label="D-pad down"
         onSend={onSend}
-        className="rounded-2xl"
-      />
+        className={buttonClassName}
+      >
+        {showIcons ? <ArrowDown className={iconClass} /> : null}
+      </ControllerButton>
       <div />
     </div>
   );
@@ -414,9 +446,324 @@ function CenterButton({ action, children, label, onSend }) {
   );
 }
 
+function RoundLabelSpace() {
+  return (
+    <div
+      aria-hidden="true"
+      className="
+        pointer-events-none invisible aspect-square
+        w-[clamp(2.45rem,8.6svh,4.15rem)]
+      "
+    />
+  );
+}
+
+function IconButtonSpace() {
+  return (
+    <div
+      aria-hidden="true"
+      className="
+        pointer-events-none invisible aspect-square
+        w-[clamp(2.05rem,7.2svh,3.15rem)]
+      "
+    />
+  );
+}
+
+function CenterButtonSpace() {
+  return (
+    <div
+      aria-hidden="true"
+      className="
+        pointer-events-none invisible aspect-square
+        w-[clamp(2.55rem,9.6svh,4.35rem)]
+      "
+    />
+  );
+}
+
+function LayoutSelector({ layout, onLayoutChange }) {
+  return (
+    <label className="flex items-center">
+      <span className="sr-only">Controller layout</span>
+      <select
+        value={layout}
+        onChange={(event) => onLayoutChange(event.target.value)}
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
+        className="
+          h-[clamp(1.9rem,6.2svh,2.7rem)] w-[clamp(7.2rem,16vw,9.2rem)]
+          rounded-full border border-white/25 bg-zinc-950/95
+          px-[clamp(0.6rem,1.5vw,0.9rem)]
+          text-[clamp(0.66rem,2.05svh,0.88rem)] font-black text-white
+          shadow-[0_8px_20px_rgba(0,0,0,0.55)]
+          outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-300/60
+        "
+      >
+        <option value="default">Default</option>
+        <option value="overcooked">Overcooked</option>
+      </select>
+    </label>
+  );
+}
+
+function StatusBar({
+  connected,
+  playerCount,
+  rejectedReason,
+  statusText,
+}) {
+  return (
+    <div className="absolute left-[clamp(0.55rem,1.4vw,1rem)] top-[clamp(0.45rem,1.4svh,0.8rem)] z-30 flex items-center gap-2 text-[clamp(0.68rem,2.2svh,0.95rem)] font-bold text-white/85">
+      <span
+        className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+          connected && !rejectedReason ? "bg-emerald-400" : "bg-red-500"
+        }`}
+      />
+      <span className="max-w-[28vw] truncate">{statusText}</span>
+      <span className="shrink-0 text-white/45">{playerCount}/4</span>
+    </div>
+  );
+}
+
+function LayoutSelectorDock({ layout, onLayoutChange }) {
+  return (
+    <div className="absolute bottom-[clamp(0.45rem,1.4svh,0.8rem)] left-1/2 z-30 -translate-x-1/2">
+      <LayoutSelector layout={layout} onLayoutChange={onLayoutChange} />
+    </div>
+  );
+}
+
+function WakeLockButton({
+  disabled,
+  keepAwakeEnabled,
+  label,
+  onClick,
+  wakeLockActive,
+}) {
+  return (
+    <UtilityButton
+      label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className={`
+        h-[clamp(2.05rem,7.2svh,3.15rem)] gap-[clamp(0.2rem,0.6vw,0.35rem)]
+        rounded-full px-[clamp(0.42rem,1vw,0.65rem)]
+        text-[clamp(0.55rem,1.75svh,0.76rem)] font-black
+        ${wakeLockActive ? "bg-amber-500/80 ring-2 ring-amber-200/70" : ""}
+        ${keepAwakeEnabled && !wakeLockActive ? "bg-zinc-600" : ""}
+      `}
+    >
+      <Sun className="h-[45%] w-auto" />
+      <span className="whitespace-nowrap">{label}</span>
+    </UtilityButton>
+  );
+}
+
+function FullscreenButton({ fullscreen, onClick }) {
+  return (
+    <UtilityButton
+      label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+      onClick={onClick}
+      className="aspect-square w-[clamp(2.05rem,7.2svh,3.15rem)] rounded-full"
+    >
+      {fullscreen ? (
+        <Minimize className="h-[52%] w-[52%]" />
+      ) : (
+        <Maximize className="h-[52%] w-[52%]" />
+      )}
+    </UtilityButton>
+  );
+}
+
+function UtilityControls({
+  fullscreen,
+  keepAwakeEnabled,
+  onToggleFullscreen,
+  onToggleKeepAwake,
+  wakeLockActive,
+  wakeLockSupported,
+  wakeLockText,
+}) {
+  return (
+    <>
+      <WakeLockButton
+        label={wakeLockText}
+        disabled={!wakeLockSupported}
+        keepAwakeEnabled={keepAwakeEnabled}
+        onClick={onToggleKeepAwake}
+        wakeLockActive={wakeLockActive}
+      />
+      <FullscreenButton fullscreen={fullscreen} onClick={onToggleFullscreen} />
+    </>
+  );
+}
+
+function DefaultControllerLayout({
+  connected,
+  fullscreen,
+  keepAwakeEnabled,
+  layout,
+  onLayoutChange,
+  onToggleFullscreen,
+  onToggleKeepAwake,
+  playerCount,
+  rejectedReason,
+  send,
+  statusText,
+  wakeLockActive,
+  wakeLockSupported,
+  wakeLockText,
+}) {
+  const isOvercooked = layout === "overcooked";
+
+  return (
+    <>
+      <StatusBar
+        connected={connected}
+        playerCount={playerCount}
+        rejectedReason={rejectedReason}
+        statusText={statusText}
+      />
+      <LayoutSelectorDock layout={layout} onLayoutChange={onLayoutChange} />
+
+      <div className="absolute left-1/2 top-[8%] z-20 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-[clamp(0.35rem,1vw,0.75rem)]">
+        {isOvercooked ? (
+          <IconButtonSpace />
+        ) : (
+          <IconControllerButton action="settings" label="Settings" onSend={send}>
+            <Settings className="h-[52%] w-[52%]" />
+          </IconControllerButton>
+        )}
+        {isOvercooked ? (
+          <IconButtonSpace />
+        ) : (
+          <IconControllerButton action="select" label="Select" onSend={send}>
+            <Circle className="h-[47%] w-[47%]" />
+          </IconControllerButton>
+        )}
+        {isOvercooked ? (
+          <IconButtonSpace />
+        ) : (
+          <IconControllerButton action="start" label="Start" onSend={send}>
+            <Circle className="h-[47%] w-[47%] fill-white/15" />
+          </IconControllerButton>
+        )}
+        {isOvercooked ? (
+          <IconButtonSpace />
+        ) : (
+          <IconControllerButton action="wireless" label="Wireless" onSend={send}>
+            <Wifi className="h-[52%] w-[52%]" />
+          </IconControllerButton>
+        )}
+        <UtilityControls
+          fullscreen={fullscreen}
+          keepAwakeEnabled={keepAwakeEnabled}
+          onToggleFullscreen={onToggleFullscreen}
+          onToggleKeepAwake={onToggleKeepAwake}
+          wakeLockActive={wakeLockActive}
+          wakeLockSupported={wakeLockSupported}
+          wakeLockText={wakeLockText}
+        />
+      </div>
+
+      <Positioned className="left-[20%] top-[29%]">
+        <DPad onSend={send} />
+      </Positioned>
+
+      {!isOvercooked && (
+        <Positioned className="left-[7.5%] top-[43%]">
+          <RoundLabel action="ls_button" onSend={send}>
+            LS
+          </RoundLabel>
+        </Positioned>
+      )}
+
+      <Positioned className="left-[15%] top-[72%]">
+        <Stick
+          name="left"
+          onSend={send}
+          className="w-[clamp(6.3rem,31svh,11.7rem)]"
+        />
+      </Positioned>
+
+      <Positioned className="left-[34%] top-[68%]">
+        <div className="flex flex-col gap-[clamp(0.45rem,1.6svh,0.8rem)]">
+          <RoundLabel action="lb" onSend={send}>
+            LB
+          </RoundLabel>
+          {isOvercooked ? (
+            <RoundLabelSpace />
+          ) : (
+            <RoundLabel action="lt" onSend={send}>
+              LT
+            </RoundLabel>
+          )}
+        </div>
+      </Positioned>
+
+      <Positioned className="left-1/2 top-[43%]">
+        <div className="flex items-center justify-center gap-[clamp(0.55rem,1.7vw,1.05rem)]">
+          <CenterButton action="back" label="Back" onSend={send}>
+            <ArrowLeft className="h-[55%] w-[55%]" />
+          </CenterButton>
+          {isOvercooked ? (
+            <CenterButtonSpace />
+          ) : (
+            <CenterButton action="home" label="Home" onSend={send}>
+              <RotateCcw className="h-[55%] w-[55%]" />
+            </CenterButton>
+          )}
+          <CenterButton action="play" label="Play" onSend={send}>
+            <Play className="h-[55%] w-[55%] translate-x-[3%]" />
+          </CenterButton>
+        </div>
+      </Positioned>
+
+      {!isOvercooked && (
+        <Positioned className="left-[72%] top-[29%]">
+          <Stick
+            name="right"
+            onSend={send}
+            className="w-[clamp(6.3rem,31svh,11.7rem)]"
+          />
+        </Positioned>
+      )}
+
+      {!isOvercooked && (
+        <Positioned className="left-[92.5%] top-[43%]">
+          <RoundLabel action="rs_button" onSend={send}>
+            RS
+          </RoundLabel>
+        </Positioned>
+      )}
+
+      <Positioned className="left-[68.5%] top-[68%]">
+        <div className="flex flex-col gap-[clamp(0.45rem,1.6svh,0.8rem)]">
+          <RoundLabel action="rb" onSend={send}>
+            RB
+          </RoundLabel>
+          {isOvercooked ? (
+            <RoundLabelSpace />
+          ) : (
+            <RoundLabel action="rt" onSend={send}>
+              RT
+            </RoundLabel>
+          )}
+        </div>
+      </Positioned>
+
+      <Positioned className="left-[84%] top-[69%]">
+        <ActionButtons onSend={send} />
+      </Positioned>
+    </>
+  );
+}
+
 export default function App() {
   const socketRef = useRef(null);
   const pressedButtonsRef = useRef(new Set());
+  const previousLayoutRef = useRef(null);
   const wakeLockRef = useRef(null);
   const wakeLockRequestRef = useRef(null);
   const [connected, setConnected] = useState(false);
@@ -424,6 +771,7 @@ export default function App() {
   const [rejectedReason, setRejectedReason] = useState("");
   const [players, setPlayers] = useState([]);
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
+  const [layout, setLayout] = useState(getInitialLayout);
   const [wakeLockSupported, setWakeLockSupported] = useState(
     () => "wakeLock" in navigator,
   );
@@ -473,6 +821,14 @@ export default function App() {
     document.addEventListener("fullscreenchange", syncFullscreenState);
     return () => document.removeEventListener("fullscreenchange", syncFullscreenState);
   }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage?.setItem(LAYOUT_STORAGE_KEY, layout);
+    } catch (error) {
+      console.warn("Could not save controller layout:", error);
+    }
+  }, [layout]);
 
   const requestWakeLock = useCallback(async ({ reRequest = false } = {}) => {
     if (!("wakeLock" in navigator)) {
@@ -572,7 +928,7 @@ export default function App() {
     };
   }, [releaseWakeLock]);
 
-  function send(data, debug = {}) {
+  const send = useCallback((data, debug = {}) => {
     if (data.type === "button") {
       const pressedButtons = pressedButtonsRef.current;
       const isPressed = pressedButtons.has(data.action);
@@ -603,7 +959,47 @@ export default function App() {
       ...data,
       time: Date.now(),
     });
-  }
+  }, []);
+
+  useEffect(() => {
+    if (previousLayoutRef.current === null) {
+      previousLayoutRef.current = layout;
+      return;
+    }
+
+    if (previousLayoutRef.current === layout) {
+      return;
+    }
+
+    const pressedActions = Array.from(pressedButtonsRef.current);
+    for (const action of pressedActions) {
+      send(
+        {
+          type: "button",
+          action,
+          state: "released",
+        },
+        { pointerId: "layout-change" },
+      );
+    }
+
+    socketRef.current?.emit("control", {
+      type: "stick",
+      stick: "left",
+      x: 0,
+      y: 0,
+      time: Date.now(),
+    });
+    socketRef.current?.emit("control", {
+      type: "stick",
+      stick: "right",
+      x: 0,
+      y: 0,
+      time: Date.now(),
+    });
+
+    previousLayoutRef.current = layout;
+  }, [layout, send]);
 
   function getStatusText() {
     if (!connected) return "Disconnected";
@@ -616,6 +1012,10 @@ export default function App() {
     if (!wakeLockSupported) return "Wake Lock Unsupported";
     if (wakeLockActive) return "Awake On";
     return "Awake Off";
+  }
+
+  function handleLayoutChange(nextLayout) {
+    setLayout(normalizeLayout(nextLayout));
   }
 
   async function toggleKeepAwake() {
@@ -658,6 +1058,23 @@ export default function App() {
     }
   }
 
+  const layoutProps = {
+    connected,
+    fullscreen,
+    keepAwakeEnabled,
+    layout,
+    onLayoutChange: handleLayoutChange,
+    onToggleFullscreen: toggleFullscreen,
+    onToggleKeepAwake: toggleKeepAwake,
+    playerCount: players.length,
+    rejectedReason,
+    send,
+    statusText: getStatusText(),
+    wakeLockActive,
+    wakeLockSupported,
+    wakeLockText: getWakeLockText(),
+  };
+
   return (
     <main className="controller-safe-area h-[100svh] w-[100vw] overflow-hidden bg-black text-white">
       <div className="hidden h-full w-full place-items-center bg-black p-6 text-center text-[clamp(1.2rem,4svh,2rem)] font-bold portrait:grid">
@@ -666,128 +1083,7 @@ export default function App() {
 
       <div className="hidden h-full w-full landscape:block">
         <div className="relative h-full w-full overflow-hidden rounded-[1.1rem] border border-white/10 bg-[#07080a] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-          <div className="absolute left-[clamp(0.55rem,1.4vw,1rem)] top-[clamp(0.45rem,1.4svh,0.8rem)] z-20 flex items-center gap-2 text-[clamp(0.68rem,2.2svh,0.95rem)] font-bold text-white/85">
-            <span
-              className={`h-2.5 w-2.5 rounded-full ${
-                connected && !rejectedReason ? "bg-emerald-400" : "bg-red-500"
-              }`}
-            />
-            <span>{getStatusText()}</span>
-            <span className="text-white/45">{players.length}/4</span>
-          </div>
-
-          <div className="absolute left-1/2 top-[8%] z-20 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-[clamp(0.35rem,1vw,0.75rem)]">
-            <IconControllerButton action="settings" label="Settings" onSend={send}>
-              <Settings className="h-[52%] w-[52%]" />
-            </IconControllerButton>
-            <IconControllerButton action="select" label="Select" onSend={send}>
-              <Circle className="h-[47%] w-[47%]" />
-            </IconControllerButton>
-            <IconControllerButton action="start" label="Start" onSend={send}>
-              <Circle className="h-[47%] w-[47%] fill-white/15" />
-            </IconControllerButton>
-            <IconControllerButton action="wireless" label="Wireless" onSend={send}>
-              <Wifi className="h-[52%] w-[52%]" />
-            </IconControllerButton>
-            <UtilityButton
-              label={getWakeLockText()}
-              disabled={!wakeLockSupported}
-              onClick={toggleKeepAwake}
-              className={`
-                h-[clamp(2.05rem,7.2svh,3.15rem)] gap-[clamp(0.2rem,0.6vw,0.35rem)]
-                rounded-full px-[clamp(0.42rem,1vw,0.65rem)]
-                text-[clamp(0.55rem,1.75svh,0.76rem)] font-black
-                ${wakeLockActive ? "bg-amber-500/80 ring-2 ring-amber-200/70" : ""}
-                ${keepAwakeEnabled && !wakeLockActive ? "bg-zinc-600" : ""}
-              `}
-            >
-              <Sun className="h-[45%] w-auto" />
-              <span className="whitespace-nowrap">{getWakeLockText()}</span>
-            </UtilityButton>
-            <UtilityButton
-              label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-              onClick={toggleFullscreen}
-              className="aspect-square w-[clamp(2.05rem,7.2svh,3.15rem)] rounded-full"
-            >
-              {fullscreen ? (
-                <Minimize className="h-[52%] w-[52%]" />
-              ) : (
-                <Maximize className="h-[52%] w-[52%]" />
-              )}
-            </UtilityButton>
-          </div>
-
-          <Positioned className="left-[20%] top-[29%]">
-            <DPad onSend={send} />
-          </Positioned>
-
-          <Positioned className="left-[7.5%] top-[43%]">
-            <RoundLabel action="ls_button" onSend={send}>
-              LS
-            </RoundLabel>
-          </Positioned>
-
-          <Positioned className="left-[15%] top-[72%]">
-            <Stick
-              name="left"
-              onSend={send}
-              className="w-[clamp(6.3rem,31svh,11.7rem)]"
-            />
-          </Positioned>
-
-          <Positioned className="left-[34%] top-[68%]">
-            <div className="flex flex-col gap-[clamp(0.45rem,1.6svh,0.8rem)]">
-              <RoundLabel action="lb" onSend={send}>
-                LB
-              </RoundLabel>
-              <RoundLabel action="lt" onSend={send}>
-                LT
-              </RoundLabel>
-            </div>
-          </Positioned>
-
-          <Positioned className="left-1/2 top-[43%]">
-            <div className="flex items-center justify-center gap-[clamp(0.55rem,1.7vw,1.05rem)]">
-              <CenterButton action="back" label="Back" onSend={send}>
-                <ArrowLeft className="h-[55%] w-[55%]" />
-              </CenterButton>
-              <CenterButton action="home" label="Home" onSend={send}>
-                <RotateCcw className="h-[55%] w-[55%]" />
-              </CenterButton>
-              <CenterButton action="play" label="Play" onSend={send}>
-                <Play className="h-[55%] w-[55%] translate-x-[3%]" />
-              </CenterButton>
-            </div>
-          </Positioned>
-
-          <Positioned className="left-[72%] top-[29%]">
-            <Stick
-              name="right"
-              onSend={send}
-              className="w-[clamp(6.3rem,31svh,11.7rem)]"
-            />
-          </Positioned>
-
-          <Positioned className="left-[92.5%] top-[43%]">
-            <RoundLabel action="rs_button" onSend={send}>
-              RS
-            </RoundLabel>
-          </Positioned>
-
-          <Positioned className="left-[68.5%] top-[68%]">
-            <div className="flex flex-col gap-[clamp(0.45rem,1.6svh,0.8rem)]">
-              <RoundLabel action="rb" onSend={send}>
-                RB
-              </RoundLabel>
-              <RoundLabel action="rt" onSend={send}>
-                RT
-              </RoundLabel>
-            </div>
-          </Positioned>
-
-          <Positioned className="left-[84%] top-[69%]">
-            <ActionButtons onSend={send} />
-          </Positioned>
+          <DefaultControllerLayout {...layoutProps} />
         </div>
       </div>
     </main>
