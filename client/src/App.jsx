@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { motion } from "framer-motion";
 import {
@@ -9,6 +9,7 @@ import {
   Play,
   RotateCcw,
   Settings,
+  Sun,
   Wifi,
 } from "lucide-react";
 
@@ -137,15 +138,29 @@ function ControllerButton({
   );
 }
 
-function UtilityButton({ children, className = "", label, onClick }) {
+function UtilityButton({
+  children,
+  className = "",
+  disabled = false,
+  label,
+  onClick,
+}) {
   return (
     <motion.button
       type="button"
       aria-label={label}
-      onClick={onClick}
+      disabled={disabled}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!disabled) {
+          onClick?.(event);
+        }
+      }}
       whileTap={{ scale: 0.92 }}
       transition={{ duration: 0.06 }}
-      className={`${buttonBaseClass} ${className}`}
+      className={`${buttonBaseClass} ${disabled ? "opacity-45" : ""} ${className}`}
     >
       {children}
     </motion.button>
@@ -402,11 +417,18 @@ function CenterButton({ action, children, label, onSend }) {
 export default function App() {
   const socketRef = useRef(null);
   const pressedButtonsRef = useRef(new Set());
+  const wakeLockRef = useRef(null);
+  const wakeLockRequestRef = useRef(null);
   const [connected, setConnected] = useState(false);
   const [playerNumber, setPlayerNumber] = useState(null);
   const [rejectedReason, setRejectedReason] = useState("");
   const [players, setPlayers] = useState([]);
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
+  const [wakeLockSupported, setWakeLockSupported] = useState(
+    () => "wakeLock" in navigator,
+  );
+  const [wakeLockActive, setWakeLockActive] = useState(false);
+  const [keepAwakeEnabled, setKeepAwakeEnabled] = useState(false);
 
   useEffect(() => {
     const socket = io(SOCKET_URL, {
@@ -452,6 +474,104 @@ export default function App() {
     return () => document.removeEventListener("fullscreenchange", syncFullscreenState);
   }, []);
 
+  const requestWakeLock = useCallback(async ({ reRequest = false } = {}) => {
+    if (!("wakeLock" in navigator)) {
+      setWakeLockSupported(false);
+      console.warn("WAKE LOCK UNSUPPORTED");
+      return false;
+    }
+
+    setWakeLockSupported(true);
+
+    if (wakeLockRef.current) {
+      return true;
+    }
+
+    if (document.visibilityState === "hidden") {
+      return false;
+    }
+
+    if (wakeLockRequestRef.current) {
+      return wakeLockRequestRef.current;
+    }
+
+    wakeLockRequestRef.current = navigator.wakeLock
+      .request("screen")
+      .then((wakeLock) => {
+        wakeLockRef.current = wakeLock;
+        setWakeLockActive(true);
+        console.log(
+          reRequest
+            ? "WAKE LOCK RE-REQUESTED AFTER VISIBILITY CHANGE"
+            : "WAKE LOCK REQUESTED",
+        );
+
+        wakeLock.addEventListener(
+          "release",
+          () => {
+            if (wakeLockRef.current === wakeLock) {
+              wakeLockRef.current = null;
+            }
+
+            setWakeLockActive(false);
+            console.log("WAKE LOCK RELEASED");
+          },
+          { once: true },
+        );
+
+        return true;
+      })
+      .catch((error) => {
+        wakeLockRef.current = null;
+        setWakeLockActive(false);
+        console.warn("WAKE LOCK REQUEST FAILED:", error);
+        return false;
+      })
+      .finally(() => {
+        wakeLockRequestRef.current = null;
+      });
+
+    return wakeLockRequestRef.current;
+  }, []);
+
+  const releaseWakeLock = useCallback(async () => {
+    const wakeLock = wakeLockRef.current;
+    wakeLockRef.current = null;
+    setWakeLockActive(false);
+
+    if (!wakeLock) {
+      return;
+    }
+
+    try {
+      await wakeLock.release();
+    } catch (error) {
+      console.warn("WAKE LOCK RELEASE FAILED:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === "hidden") {
+        releaseWakeLock();
+        return;
+      }
+
+      if (keepAwakeEnabled) {
+        requestWakeLock({ reRequest: true });
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [keepAwakeEnabled, releaseWakeLock, requestWakeLock]);
+
+  useEffect(() => {
+    return () => {
+      releaseWakeLock();
+    };
+  }, [releaseWakeLock]);
+
   function send(data, debug = {}) {
     if (data.type === "button") {
       const pressedButtons = pressedButtonsRef.current;
@@ -487,9 +607,31 @@ export default function App() {
 
   function getStatusText() {
     if (!connected) return "Disconnected";
-    if (playerNumber) return `Connected • Player ${playerNumber}`;
-    if (rejectedReason) return "Waiting • no free slots";
-    return "Connected • assigning player";
+    if (playerNumber) return `Connected | Player ${playerNumber}`;
+    if (rejectedReason) return "Waiting | no free slots";
+    return "Connected | assigning player";
+  }
+
+  function getWakeLockText() {
+    if (!wakeLockSupported) return "Wake Lock Unsupported";
+    if (wakeLockActive) return "Awake On";
+    return "Awake Off";
+  }
+
+  async function toggleKeepAwake() {
+    if (!wakeLockSupported) {
+      console.warn("WAKE LOCK UNSUPPORTED");
+      return;
+    }
+
+    if (keepAwakeEnabled) {
+      setKeepAwakeEnabled(false);
+      await releaseWakeLock();
+      return;
+    }
+
+    setKeepAwakeEnabled(true);
+    await requestWakeLock();
   }
 
   async function toggleFullscreen() {
@@ -508,6 +650,9 @@ export default function App() {
           // Orientation lock support varies across mobile browsers.
         }
       }
+
+      setKeepAwakeEnabled(true);
+      await requestWakeLock();
     } catch (error) {
       console.log("Fullscreen failed:", error);
     }
@@ -544,6 +689,21 @@ export default function App() {
             <IconControllerButton action="wireless" label="Wireless" onSend={send}>
               <Wifi className="h-[52%] w-[52%]" />
             </IconControllerButton>
+            <UtilityButton
+              label={getWakeLockText()}
+              disabled={!wakeLockSupported}
+              onClick={toggleKeepAwake}
+              className={`
+                h-[clamp(2.05rem,7.2svh,3.15rem)] gap-[clamp(0.2rem,0.6vw,0.35rem)]
+                rounded-full px-[clamp(0.42rem,1vw,0.65rem)]
+                text-[clamp(0.55rem,1.75svh,0.76rem)] font-black
+                ${wakeLockActive ? "bg-amber-500/80 ring-2 ring-amber-200/70" : ""}
+                ${keepAwakeEnabled && !wakeLockActive ? "bg-zinc-600" : ""}
+              `}
+            >
+              <Sun className="h-[45%] w-auto" />
+              <span className="whitespace-nowrap">{getWakeLockText()}</span>
+            </UtilityButton>
             <UtilityButton
               label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
               onClick={toggleFullscreen}
