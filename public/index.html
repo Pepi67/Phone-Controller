@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <title>Phone Controller</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -11,16 +11,18 @@
       -webkit-user-select: none;
       -webkit-touch-callout: none;
       touch-action: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    html, body {
-      margin: 0;
+    html,
+    body {
       width: 100%;
       height: 100%;
+      margin: 0;
       overflow: hidden;
-      background: radial-gradient(circle at center, #202020, #070707);
-      font-family: Arial, sans-serif;
-      color: white;
+      background: #080808;
+      color: #d8d8d8;
+      font-family: Arial, Helvetica, sans-serif;
     }
 
     body {
@@ -29,286 +31,383 @@
       justify-content: center;
     }
 
+    :root {
+      --bg: #141414;
+      --button: #050505;
+      --button-soft: #0b0b0b;
+      --button-active: #1f1f1f;
+      --outline: #3a3a3a;
+      --text: #d5d5d5;
+      --muted: #7f7f7f;
+
+      --unit: min(1vw, 1.75vh);
+      --round: clamp(0.8rem, 1.6vw, 2rem);
+    }
+
     .controller {
-      width: min(100vw, 1000px);
-      height: min(100vh, 560px);
-      padding: 20px;
-      display: grid;
-      grid-template-rows: 70px 1fr 140px;
-      gap: 12px;
-    }
-
-    .top-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr;
-      gap: 14px;
-    }
-
-    .middle {
-      display: grid;
-      grid-template-columns: 1fr 1.2fr 1fr;
-      align-items: center;
-      gap: 24px;
-    }
-
-    .bottom-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 160px;
-      padding: 0 120px;
+      position: relative;
+      width: min(100dvw, calc(100dvh * 2.18));
+      height: min(100dvh, calc(100dvw / 2.18));
+      background: radial-gradient(circle at center, #181818, #0d0d0d 70%);
+      border-radius: clamp(1rem, 2vw, 2rem);
+      overflow: hidden;
     }
 
     .control {
+      position: absolute;
       border: none;
-      color: white;
-      background: linear-gradient(145deg, #2f2f35, #17171b);
+      background: linear-gradient(145deg, #0c0c0c, #020202);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      cursor: pointer;
       box-shadow:
-        inset 0 0 10px rgba(255,255,255,0.05),
-        0 8px 20px rgba(0,0,0,0.55);
-      border-radius: 24px;
-      font-size: 24px;
-      font-weight: bold;
+        inset 0 0 0 0.08em rgba(255, 255, 255, 0.08),
+        0 0.45em 1.1em rgba(0, 0, 0, 0.65);
     }
 
     .control.active {
-      transform: scale(0.94);
-      background: linear-gradient(145deg, #62626d, #2d2d33);
+      transform: scale(0.92);
+      background: linear-gradient(145deg, #2b2b2b, #080808);
       box-shadow:
-        inset 0 0 18px rgba(255,255,255,0.15),
-        0 2px 8px rgba(0,0,0,0.5);
+        inset 0 0 1.2em rgba(255, 255, 255, 0.08),
+        0 0.2em 0.6em rgba(0, 0, 0, 0.85);
     }
 
-    .shoulder {
-      height: 62px;
-      border-radius: 22px;
-      font-size: 20px;
+    .round-btn {
+      border-radius: 50%;
+      font-size: clamp(1.3rem, 4vw, 4rem);
+    }
+
+    .small-icon {
+      width: 5.2%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      font-size: clamp(1rem, 2.6vw, 2.5rem);
+      color: #b8b8b8;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .small-icon.active {
+      background: #161616;
+    }
+
+    .label-button {
+      width: 8%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      font-size: clamp(1.2rem, 4.4vw, 4.2rem);
+      color: #d0d0d0;
+    }
+
+    .bumper {
+      width: 8%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      font-size: clamp(1rem, 3.5vw, 3.8rem);
+    }
+
+    .stick-area {
+      width: 17.5%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: #050505;
+      border: clamp(0.18rem, 0.45vw, 0.55rem) solid var(--outline);
+      box-shadow:
+        inset 0 0 1.2em rgba(255, 255, 255, 0.04),
+        0 0.7em 1.3em rgba(0, 0, 0, 0.6);
+    }
+
+    .stick-knob {
+      width: 46%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #1d1d1d, #030303 70%);
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow:
+        inset 0 0 0.7em rgba(255, 255, 255, 0.08),
+        0 0.35em 0.7em rgba(0, 0, 0, 0.8);
     }
 
     .dpad {
-      display: grid;
-      grid-template-columns: 78px 78px 78px;
-      grid-template-rows: 78px 78px 78px;
-      justify-content: center;
-      gap: 6px;
-    }
-
-    .dpad .up {
-      grid-column: 2;
-      grid-row: 1;
-    }
-
-    .dpad .left {
-      grid-column: 1;
-      grid-row: 2;
-    }
-
-    .dpad .center {
-      grid-column: 2;
-      grid-row: 2;
-      background: #151515;
-      box-shadow: inset 0 0 12px rgba(0,0,0,0.8);
-    }
-
-    .dpad .right {
-      grid-column: 3;
-      grid-row: 2;
-    }
-
-    .dpad .down {
-      grid-column: 2;
-      grid-row: 3;
+      position: absolute;
+      left: 13.2%;
+      top: 8.3%;
+      width: 18%;
+      aspect-ratio: 1;
     }
 
     .dpad button {
-      width: 78px;
-      height: 78px;
-      border-radius: 18px;
+      position: absolute;
+      width: 36%;
+      height: 36%;
+      border: none;
+      background: linear-gradient(145deg, #0c0c0c, #010101);
+      color: transparent;
+      box-shadow:
+        inset 0 0 0 0.08em rgba(255, 255, 255, 0.08),
+        0 0.45em 1em rgba(0, 0, 0, 0.6);
     }
 
-    .center-panel {
-      display: grid;
-      grid-template-rows: 70px 110px 60px;
-      gap: 14px;
-      align-items: center;
-      justify-items: center;
+    .dpad button.active {
+      transform: scale(0.92);
+      background: #252525;
     }
 
-    .menu-row {
-      width: 100%;
-      display: grid;
-      grid-template-columns: 1fr 1.7fr 1fr;
-      gap: 14px;
+    .dpad-up {
+      left: 32%;
+      top: 0;
+      border-radius: 28% 28% 42% 42%;
     }
 
-    .small-button {
-      height: 48px;
-      border-radius: 24px;
-      font-size: 15px;
+    .dpad-down {
+      left: 32%;
+      bottom: 0;
+      border-radius: 42% 42% 28% 28%;
     }
 
-    .touchpad {
-      width: 100%;
-      height: 110px;
-      border-radius: 28px;
-      background: linear-gradient(145deg, #28282e, #101014);
-      border: 2px solid rgba(255,255,255,0.08);
-      font-size: 18px;
-      letter-spacing: 1px;
+    .dpad-left {
+      left: 0;
+      top: 32%;
+      border-radius: 28% 42% 42% 28%;
     }
 
-    .ps-button {
-      width: 58px;
-      height: 58px;
-      border-radius: 50%;
-      font-size: 22px;
+    .dpad-right {
+      right: 0;
+      top: 32%;
+      border-radius: 42% 28% 28% 42%;
     }
 
-    .actions {
-      display: grid;
-      grid-template-columns: 78px 78px 78px;
-      grid-template-rows: 78px 78px 78px;
-      justify-content: center;
-      gap: 6px;
+    .action-cluster {
+      position: absolute;
+      right: 5.2%;
+      bottom: 7%;
+      width: 22%;
+      aspect-ratio: 1;
     }
 
-    .actions .triangle {
-      grid-column: 2;
-      grid-row: 1;
+    .action-cluster .round-btn {
+      width: 30%;
+      aspect-ratio: 1;
+      font-size: clamp(1.1rem, 4.5vw, 4.5rem);
     }
 
-    .actions .square {
-      grid-column: 1;
-      grid-row: 2;
+    .action-y {
+      left: 35%;
+      top: 0;
     }
 
-    .actions .circle {
-      grid-column: 3;
-      grid-row: 2;
+    .action-x {
+      left: 0;
+      top: 35%;
     }
 
-    .actions .cross {
-      grid-column: 2;
-      grid-row: 3;
+    .action-b {
+      right: 0;
+      top: 35%;
     }
 
-    .actions button {
-      width: 78px;
-      height: 78px;
-      border-radius: 50%;
-      font-size: 28px;
+    .action-a {
+      left: 35%;
+      bottom: 0;
     }
 
-    .stick {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      justify-self: center;
-      background:
-        radial-gradient(circle at 35% 30%, #5a5a62, #24242a 48%, #0b0b0d 80%);
-      border: 8px solid #111;
-      font-size: 14px;
-      color: #cfcfcf;
+    .top-settings {
+      left: 34.5%;
+      top: 4.7%;
+    }
+
+    .top-circle-1 {
+      left: 43.6%;
+      top: 4.7%;
+    }
+
+    .top-circle-2 {
+      left: 52.6%;
+      top: 4.7%;
+    }
+
+    .top-wireless {
+      left: 61.5%;
+      top: 4.7%;
+      opacity: 0.45;
+    }
+
+    .mid-left {
+      left: 36.7%;
+      top: 32.5%;
+    }
+
+    .mid-home {
+      left: 47.1%;
+      top: 32.5%;
+      outline: clamp(0.12rem, 0.28vw, 0.35rem) solid var(--outline);
+      outline-offset: -0.45em;
+    }
+
+    .mid-right {
+      left: 57.5%;
+      top: 32.5%;
+    }
+
+    .left-stick {
+      left: 4.5%;
+      bottom: 7%;
+    }
+
+    .right-stick {
+      right: 16.2%;
+      top: 9%;
+    }
+
+    .ls {
+      left: 2.8%;
+      top: 32.5%;
+    }
+
+    .rs {
+      right: 4.6%;
+      top: 32.5%;
+    }
+
+    .lb {
+      left: 23.7%;
+      bottom: 28.4%;
+    }
+
+    .lt {
+      left: 23.7%;
+      bottom: 6.3%;
+    }
+
+    .rb {
+      right: 27.5%;
+      bottom: 28.4%;
+    }
+
+    .rt {
+      right: 27.5%;
+      bottom: 6.3%;
     }
 
     .status {
-      position: fixed;
-      top: 10px;
-      left: 12px;
-      font-size: 13px;
-      color: #aaa;
+      position: absolute;
+      left: 1.2%;
+      top: 1.4%;
+      font-size: clamp(0.65rem, 1.3vw, 1rem);
+      color: #666;
+      z-index: 10;
+    }
+
+    .rotate-hint {
+      display: none;
     }
 
     @media (orientation: portrait) {
       .controller {
-        transform: rotate(90deg);
-        width: 100vh;
-        height: 100vw;
+        width: 100dvw;
+        height: 100dvh;
+        border-radius: 0;
+      }
+
+      .rotate-hint {
+        display: flex;
+        position: absolute;
+        inset: 0;
+        z-index: 100;
+        background: #080808;
+        color: #ddd;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 2rem;
+        font-size: clamp(1.1rem, 5vw, 2rem);
       }
     }
 
-    @media (max-width: 750px) {
-      .controller {
-        grid-template-rows: 58px 1fr 105px;
-        padding: 12px;
+    @media (max-aspect-ratio: 1.8/1) and (orientation: landscape) {
+      .action-cluster {
+        right: 3%;
+        width: 20%;
       }
 
-      .middle {
-        gap: 12px;
+      .dpad {
+        left: 11.5%;
+        width: 17%;
       }
 
-      .bottom-row {
-        gap: 90px;
-        padding: 0 70px;
+      .left-stick {
+        left: 3.5%;
       }
 
-      .dpad,
-      .actions {
-        grid-template-columns: 62px 62px 62px;
-        grid-template-rows: 62px 62px 62px;
+      .right-stick {
+        right: 15%;
       }
 
-      .dpad button,
-      .actions button {
-        width: 62px;
-        height: 62px;
-        font-size: 22px;
+      .lb,
+      .lt {
+        left: 24.5%;
       }
 
-      .stick {
-        width: 90px;
-        height: 90px;
-      }
-
-      .touchpad {
-        height: 85px;
+      .rb,
+      .rt {
+        right: 28.5%;
       }
     }
   </style>
 </head>
 
 <body>
-  <div class="status" id="status">Connecting...</div>
-
   <main class="controller">
-    <section class="top-row">
-      <button class="control shoulder" data-action="l1">L1</button>
-      <button class="control shoulder" data-action="l2">L2</button>
-      <button class="control shoulder" data-action="r2">R2</button>
-      <button class="control shoulder" data-action="r1">R1</button>
+    <div class="status" id="status">Connecting...</div>
+
+    <div class="rotate-hint">
+      Rotate your phone sideways for the controller layout.
+    </div>
+
+    <section class="dpad">
+      <button class="dpad-up control-pad" data-action="up"></button>
+      <button class="dpad-left control-pad" data-action="left"></button>
+      <button class="dpad-right control-pad" data-action="right"></button>
+      <button class="dpad-down control-pad" data-action="down"></button>
     </section>
 
-    <section class="middle">
-      <div class="dpad">
-        <button class="control up" data-action="up">▲</button>
-        <button class="control left" data-action="left">◀</button>
-        <button class="center" disabled></button>
-        <button class="control right" data-action="right">▶</button>
-        <button class="control down" data-action="down">▼</button>
-      </div>
+    <button class="control small-icon top-settings" data-action="settings">⚙</button>
+    <button class="control small-icon top-circle-1" data-action="select">○</button>
+    <button class="control small-icon top-circle-2" data-action="start">○</button>
+    <button class="control small-icon top-wireless" data-action="wireless">⌁</button>
 
-      <div class="center-panel">
-        <div class="menu-row">
-          <button class="control small-button" data-action="share">SHARE</button>
-          <button class="control small-button" data-action="mute">MUTE</button>
-          <button class="control small-button" data-action="options">OPTIONS</button>
-        </div>
+    <button class="control small-icon mid-left" data-action="back">←</button>
+    <button class="control small-icon mid-home" data-action="home">⟳</button>
+    <button class="control small-icon mid-right" data-action="play">▶</button>
 
-        <button class="control touchpad" data-action="touchpad">TOUCHPAD</button>
+    <button class="control label-button ls" data-action="ls_button">LS</button>
+    <button class="control label-button rs" data-action="rs_button">RS</button>
 
-        <button class="control ps-button" data-action="home">⌂</button>
-      </div>
+    <button class="control bumper lb" data-action="lb">LB</button>
+    <button class="control bumper lt" data-action="lt">LT</button>
+    <button class="control bumper rb" data-action="rb">RB</button>
+    <button class="control bumper rt" data-action="rt">RT</button>
 
-      <div class="actions">
-        <button class="control triangle" data-action="triangle">△</button>
-        <button class="control square" data-action="square">□</button>
-        <button class="control circle" data-action="circle">○</button>
-        <button class="control cross" data-action="cross">×</button>
-      </div>
-    </section>
+    <div class="control stick-area left-stick" data-stick="left">
+      <div class="stick-knob"></div>
+    </div>
 
-    <section class="bottom-row">
-      <button class="control stick" data-action="left_stick">L3</button>
-      <button class="control stick" data-action="right_stick">R3</button>
+    <div class="control stick-area right-stick" data-stick="right">
+      <div class="stick-knob"></div>
+    </div>
+
+    <section class="action-cluster">
+      <button class="control round-btn action-y" data-action="y">Y</button>
+      <button class="control round-btn action-x" data-action="x">X</button>
+      <button class="control round-btn action-b" data-action="b">B</button>
+      <button class="control round-btn action-a" data-action="a">A</button>
     </section>
   </main>
 
@@ -316,8 +415,8 @@
 
   <script>
     const socket = io();
-    const pressedButtons = new Set();
     const statusText = document.getElementById("status");
+    const pressedButtons = new Set();
 
     socket.on("connect", () => {
       statusText.textContent = "Connected";
@@ -327,8 +426,9 @@
       statusText.textContent = "Disconnected";
     });
 
-    function sendCommand(action, state) {
+    function emitControl(action, state) {
       socket.emit("control", {
+        type: "button",
         action,
         state,
         pressed: Array.from(pressedButtons),
@@ -339,26 +439,32 @@
     function pressButton(button, pointerId) {
       const action = button.dataset.action;
 
-      button.setPointerCapture(pointerId);
+      if (!action) return;
+
+      try {
+        button.setPointerCapture(pointerId);
+      } catch {}
 
       if (!pressedButtons.has(action)) {
         pressedButtons.add(action);
         button.classList.add("active");
-        sendCommand(action, "pressed");
+        emitControl(action, "pressed");
       }
     }
 
     function releaseButton(button) {
       const action = button.dataset.action;
 
+      if (!action) return;
+
       if (pressedButtons.has(action)) {
         pressedButtons.delete(action);
         button.classList.remove("active");
-        sendCommand(action, "released");
+        emitControl(action, "released");
       }
     }
 
-    document.querySelectorAll(".control").forEach((button) => {
+    document.querySelectorAll("[data-action]").forEach((button) => {
       button.addEventListener("pointerdown", (event) => {
         event.preventDefault();
         pressButton(button, event.pointerId);
@@ -378,6 +484,88 @@
         releaseButton(button);
       });
     });
+
+    function setupStick(stick) {
+      const knob = stick.querySelector(".stick-knob");
+      const stickName = stick.dataset.stick;
+      let activePointer = null;
+
+      function sendStick(x, y) {
+        socket.emit("control", {
+          type: "stick",
+          stick: stickName,
+          x,
+          y,
+          time: Date.now()
+        });
+      }
+
+      function moveStick(event) {
+        if (activePointer !== event.pointerId) return;
+
+        const rect = stick.getBoundingClientRect();
+        const radius = rect.width / 2;
+        const centerX = rect.left + radius;
+        const centerY = rect.top + radius;
+
+        let dx = event.clientX - centerX;
+        let dy = event.clientY - centerY;
+
+        const distance = Math.hypot(dx, dy);
+        const maxDistance = radius * 0.48;
+
+        if (distance > maxDistance) {
+          dx = (dx / distance) * maxDistance;
+          dy = (dy / distance) * maxDistance;
+        }
+
+        const normalizedX = +(dx / maxDistance).toFixed(2);
+        const normalizedY = +(-dy / maxDistance).toFixed(2);
+
+        knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        stick.classList.add("active");
+
+        sendStick(normalizedX, normalizedY);
+      }
+
+      function resetStick() {
+        activePointer = null;
+        knob.style.transform = "translate(-50%, -50%)";
+        stick.classList.remove("active");
+        sendStick(0, 0);
+      }
+
+      stick.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+
+        activePointer = event.pointerId;
+
+        try {
+          stick.setPointerCapture(event.pointerId);
+        } catch {}
+
+        moveStick(event);
+      });
+
+      stick.addEventListener("pointermove", (event) => {
+        event.preventDefault();
+        moveStick(event);
+      });
+
+      stick.addEventListener("pointerup", (event) => {
+        event.preventDefault();
+        if (activePointer === event.pointerId) resetStick();
+      });
+
+      stick.addEventListener("pointercancel", (event) => {
+        event.preventDefault();
+        if (activePointer === event.pointerId) resetStick();
+      });
+
+      stick.addEventListener("lostpointercapture", resetStick);
+    }
+
+    document.querySelectorAll("[data-stick]").forEach(setupStick);
 
     window.addEventListener("contextmenu", (event) => {
       event.preventDefault();
