@@ -3,10 +3,7 @@ import { io } from "socket.io-client";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
+  Circle,
   Maximize,
   Minimize,
   Play,
@@ -20,7 +17,7 @@ const SOCKET_URL = `${window.location.protocol}//${window.location.hostname}:300
 const buttonBaseClass = `
   flex select-none items-center justify-center
   border border-white/30 bg-zinc-800 text-white
-  shadow-[0_8px_20px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.16)]
+  shadow-[0_8px_22px_rgba(0,0,0,0.58),inset_0_1px_0_rgba(255,255,255,0.16)]
   outline-none transition-colors
 `;
 
@@ -34,7 +31,7 @@ function ControllerButton({
   const [active, setActive] = useState(false);
   const pointerId = useRef(null);
 
-  function emitState(state) {
+  function sendState(state) {
     onSend({
       type: "button",
       action,
@@ -42,7 +39,7 @@ function ControllerButton({
     });
   }
 
-  function handlePointerDown(event) {
+  function press(event) {
     event.preventDefault();
 
     if (pointerId.current !== null) return;
@@ -52,15 +49,15 @@ function ControllerButton({
     try {
       event.currentTarget.setPointerCapture(event.pointerId);
     } catch {
-      // Pointer capture can fail on older mobile browsers.
+      // Pointer capture can be unavailable on some mobile browser paths.
     }
 
     setActive(true);
     navigator.vibrate?.(12);
-    emitState("pressed");
+    sendState("pressed");
   }
 
-  function handlePointerRelease(event) {
+  function release(event) {
     event?.preventDefault();
 
     if (pointerId.current === null) return;
@@ -68,17 +65,17 @@ function ControllerButton({
 
     pointerId.current = null;
     setActive(false);
-    emitState("released");
+    sendState("released");
   }
 
   return (
     <motion.button
       type="button"
       aria-label={label ?? action}
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerRelease}
-      onPointerCancel={handlePointerRelease}
-      onLostPointerCapture={handlePointerRelease}
+      onPointerDown={press}
+      onPointerUp={release}
+      onPointerCancel={release}
+      onLostPointerCapture={release}
       animate={{ scale: active ? 0.94 : 1 }}
       transition={{ duration: 0.06 }}
       className={`
@@ -107,6 +104,16 @@ function UtilityButton({ children, className = "", label, onClick }) {
   );
 }
 
+function Positioned({ children, className = "" }) {
+  return (
+    <div
+      className={`absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
 function Stick({ name, onSend, className = "" }) {
   const stickRef = useRef(null);
   const pointerId = useRef(null);
@@ -122,7 +129,7 @@ function Stick({ name, onSend, className = "" }) {
     });
   }
 
-  function updateFromPointer(event) {
+  function move(event) {
     if (pointerId.current !== event.pointerId || !stickRef.current) return;
 
     event.preventDefault();
@@ -149,7 +156,7 @@ function Stick({ name, onSend, className = "" }) {
     sendStick(x, y);
   }
 
-  function handlePointerDown(event) {
+  function start(event) {
     event.preventDefault();
 
     if (pointerId.current !== null) return;
@@ -159,14 +166,14 @@ function Stick({ name, onSend, className = "" }) {
     try {
       event.currentTarget.setPointerCapture(event.pointerId);
     } catch {
-      // Pointer capture can fail on older mobile browsers.
+      // Pointer capture can be unavailable on some mobile browser paths.
     }
 
     setActive(true);
-    updateFromPointer(event);
+    move(event);
   }
 
-  function handlePointerEnd(event) {
+  function end(event) {
     event?.preventDefault();
 
     if (pointerId.current === null) return;
@@ -183,41 +190,40 @@ function Stick({ name, onSend, className = "" }) {
       ref={stickRef}
       aria-label={`${name} analog stick`}
       role="application"
-      onPointerDown={handlePointerDown}
-      onPointerMove={updateFromPointer}
-      onPointerUp={handlePointerEnd}
-      onPointerCancel={handlePointerEnd}
-      onLostPointerCapture={handlePointerEnd}
+      onPointerDown={start}
+      onPointerMove={move}
+      onPointerUp={end}
+      onPointerCancel={end}
+      onLostPointerCapture={end}
       className={`
         relative aspect-square max-h-full max-w-full overflow-hidden rounded-full
-        border-[3px] border-white/35 bg-zinc-950
-        shadow-[0_12px_26px_rgba(0,0,0,0.75),inset_0_0_28px_rgba(255,255,255,0.13)]
+        border-[3px] border-white/40 bg-zinc-950
+        shadow-[0_12px_26px_rgba(0,0,0,0.75),inset_0_0_30px_rgba(255,255,255,0.14)]
         ${active ? "ring-2 ring-sky-300/80" : ""}
         ${className}
       `}
     >
-      <div className="pointer-events-none absolute inset-[18%] rounded-full border border-white/15" />
-      <motion.div
-        animate={{ x: pos.x, y: pos.y }}
-        transition={{ duration: 0.04 }}
-        className="
-          pointer-events-none absolute left-1/2 top-1/2 aspect-square w-[43%]
-          -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/35
-          bg-zinc-500 shadow-[0_8px_18px_rgba(0,0,0,0.7),inset_0_2px_8px_rgba(255,255,255,0.35)]
-        "
-      />
+      <div className="pointer-events-none absolute inset-[17%] rounded-full border border-white/15" />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 aspect-square w-[43%] -translate-x-1/2 -translate-y-1/2">
+        <motion.div
+          animate={{ x: pos.x, y: pos.y }}
+          transition={{ duration: 0.04 }}
+          className="
+            h-full w-full rounded-full border border-white/35 bg-zinc-500
+            shadow-[0_8px_18px_rgba(0,0,0,0.7),inset_0_2px_8px_rgba(255,255,255,0.35)]
+          "
+        />
+      </div>
     </div>
   );
 }
 
 function DPad({ onSend }) {
-  const iconClass = "h-[62%] w-[62%] stroke-[3]";
-
   return (
     <div
       className="
-        grid aspect-square w-[clamp(8rem,42svh,15rem)] max-h-full max-w-full
-        grid-cols-3 grid-rows-3 gap-[clamp(0.25rem,1svh,0.6rem)]
+        grid aspect-square w-[clamp(7.6rem,39svh,14.5rem)] max-h-full max-w-full
+        grid-cols-3 grid-rows-3 gap-[clamp(0.28rem,1.15svh,0.65rem)]
       "
     >
       <div />
@@ -226,9 +232,7 @@ function DPad({ onSend }) {
         label="D-pad up"
         onSend={onSend}
         className="rounded-2xl"
-      >
-        <ChevronUp className={iconClass} />
-      </ControllerButton>
+      />
       <div />
 
       <ControllerButton
@@ -236,18 +240,14 @@ function DPad({ onSend }) {
         label="D-pad left"
         onSend={onSend}
         className="rounded-2xl"
-      >
-        <ChevronLeft className={iconClass} />
-      </ControllerButton>
-      <div className="rounded-2xl border border-white/10 bg-black/35" />
+      />
+      <div className="rounded-2xl border border-white/10 bg-black/45" />
       <ControllerButton
         action="right"
         label="D-pad right"
         onSend={onSend}
         className="rounded-2xl"
-      >
-        <ChevronRight className={iconClass} />
-      </ControllerButton>
+      />
 
       <div />
       <ControllerButton
@@ -255,29 +255,27 @@ function DPad({ onSend }) {
         label="D-pad down"
         onSend={onSend}
         className="rounded-2xl"
-      >
-        <ChevronDown className={iconClass} />
-      </ControllerButton>
+      />
       <div />
     </div>
   );
 }
 
 function ActionButtons({ onSend }) {
-  const actionTextClass = "text-[clamp(1.45rem,5.4svh,3rem)] font-black";
+  const labelClass = "text-[clamp(1.45rem,5.4svh,3.05rem)] font-black";
 
   return (
     <div
       className="
-        grid aspect-square w-[clamp(8rem,42svh,15rem)] max-h-full max-w-full
-        grid-cols-3 grid-rows-3 gap-[clamp(0.25rem,1svh,0.6rem)]
+        grid aspect-square w-[clamp(7.6rem,39svh,14.5rem)] max-h-full max-w-full
+        grid-cols-3 grid-rows-3 gap-[clamp(0.28rem,1.15svh,0.65rem)]
       "
     >
       <div />
       <ControllerButton
         action="y"
         onSend={onSend}
-        className={`rounded-full ${actionTextClass}`}
+        className={`rounded-full ${labelClass}`}
       >
         Y
       </ControllerButton>
@@ -286,15 +284,15 @@ function ActionButtons({ onSend }) {
       <ControllerButton
         action="x"
         onSend={onSend}
-        className={`rounded-full ${actionTextClass}`}
+        className={`rounded-full ${labelClass}`}
       >
         X
       </ControllerButton>
-      <div className="rounded-full border border-white/10 bg-black/35" />
+      <div className="rounded-full border border-white/10 bg-black/45" />
       <ControllerButton
         action="b"
         onSend={onSend}
-        className={`rounded-full ${actionTextClass}`}
+        className={`rounded-full ${labelClass}`}
       >
         B
       </ControllerButton>
@@ -303,7 +301,7 @@ function ActionButtons({ onSend }) {
       <ControllerButton
         action="a"
         onSend={onSend}
-        className={`rounded-full ${actionTextClass}`}
+        className={`rounded-full ${labelClass}`}
       >
         A
       </ControllerButton>
@@ -318,8 +316,8 @@ function RoundLabel({ action, children, onSend }) {
       action={action}
       onSend={onSend}
       className="
-        aspect-square w-[clamp(2.6rem,9svh,4.2rem)] max-w-full rounded-full
-        text-[clamp(0.9rem,3svh,1.35rem)] font-black
+        aspect-square w-[clamp(2.45rem,8.6svh,4.15rem)] rounded-full
+        text-[clamp(0.82rem,2.85svh,1.3rem)] font-black
       "
     >
       {children}
@@ -327,12 +325,26 @@ function RoundLabel({ action, children, onSend }) {
   );
 }
 
-function CenterButton({ action, children, onSend }) {
+function IconControllerButton({ action, children, label, onSend }) {
   return (
     <ControllerButton
       action={action}
+      label={label}
       onSend={onSend}
-      className="aspect-square w-[clamp(2.8rem,11svh,4.7rem)] rounded-full"
+      className="aspect-square w-[clamp(2.05rem,7.2svh,3.15rem)] rounded-full"
+    >
+      {children}
+    </ControllerButton>
+  );
+}
+
+function CenterButton({ action, children, label, onSend }) {
+  return (
+    <ControllerButton
+      action={action}
+      label={label}
+      onSend={onSend}
+      className="aspect-square w-[clamp(2.55rem,9.6svh,4.35rem)] rounded-full"
     >
       {children}
     </ControllerButton>
@@ -388,7 +400,7 @@ export default function App() {
         try {
           await screen.orientation.lock("landscape");
         } catch {
-          // Orientation lock support varies by browser and fullscreen policy.
+          // Orientation lock support varies across mobile browsers.
         }
       }
     } catch (error) {
@@ -397,50 +409,39 @@ export default function App() {
   }
 
   return (
-    <main className="controller-safe-area h-[100svh] w-full overflow-hidden bg-black text-white">
+    <main className="controller-safe-area h-[100svh] w-[100vw] overflow-hidden bg-black text-white">
       <div className="hidden h-full w-full place-items-center bg-black p-6 text-center text-[clamp(1.2rem,4svh,2rem)] font-bold portrait:grid">
         Rotate your phone sideways.
       </div>
 
-      <div className="hidden h-full min-h-0 w-full flex-col overflow-hidden bg-[#07080a] landscape:flex">
-        <header
-          className="
-            grid h-[clamp(2.7rem,12svh,4rem)] shrink-0 grid-cols-[1fr_auto_1fr]
-            items-center gap-[clamp(0.35rem,1.2vw,1rem)] px-[clamp(0.45rem,1.5vw,1rem)]
-          "
-        >
-          <div className="flex min-w-0 items-center gap-2 text-[clamp(0.7rem,2.3svh,0.95rem)] font-bold text-white/85">
+      <div className="hidden h-full w-full landscape:block">
+        <div className="relative h-full w-full overflow-hidden rounded-[1.1rem] border border-white/10 bg-[#07080a] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+          <div className="absolute left-[clamp(0.55rem,1.4vw,1rem)] top-[clamp(0.45rem,1.4svh,0.8rem)] z-20 flex items-center gap-2 text-[clamp(0.68rem,2.2svh,0.95rem)] font-bold text-white/85">
             <span
-              className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+              className={`h-2.5 w-2.5 rounded-full ${
                 connected ? "bg-emerald-400" : "bg-red-500"
               }`}
             />
-            <span className="truncate">{connected ? "Connected" : "Disconnected"}</span>
+            <span>{connected ? "Connected" : "Disconnected"}</span>
           </div>
 
-          <div className="h-px w-[clamp(2rem,8vw,6rem)] bg-white/15" />
-
-          <div className="flex justify-end gap-[clamp(0.35rem,1vw,0.7rem)]">
-            <ControllerButton
-              action="settings"
-              label="Settings"
-              onSend={send}
-              className="aspect-square w-[clamp(2.25rem,9svh,3.35rem)] rounded-full"
-            >
+          <div className="absolute left-1/2 top-[8%] z-20 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-[clamp(0.35rem,1vw,0.75rem)]">
+            <IconControllerButton action="settings" label="Settings" onSend={send}>
               <Settings className="h-[52%] w-[52%]" />
-            </ControllerButton>
-            <ControllerButton
-              action="wireless"
-              label="Wireless"
-              onSend={send}
-              className="aspect-square w-[clamp(2.25rem,9svh,3.35rem)] rounded-full"
-            >
+            </IconControllerButton>
+            <IconControllerButton action="select" label="Select" onSend={send}>
+              <Circle className="h-[47%] w-[47%]" />
+            </IconControllerButton>
+            <IconControllerButton action="start" label="Start" onSend={send}>
+              <Circle className="h-[47%] w-[47%] fill-white/15" />
+            </IconControllerButton>
+            <IconControllerButton action="wireless" label="Wireless" onSend={send}>
               <Wifi className="h-[52%] w-[52%]" />
-            </ControllerButton>
+            </IconControllerButton>
             <UtilityButton
               label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
               onClick={toggleFullscreen}
-              className="aspect-square w-[clamp(2.25rem,9svh,3.35rem)] rounded-full"
+              className="aspect-square w-[clamp(2.05rem,7.2svh,3.15rem)] rounded-full"
             >
               {fullscreen ? (
                 <Minimize className="h-[52%] w-[52%]" />
@@ -449,41 +450,27 @@ export default function App() {
               )}
             </UtilityButton>
           </div>
-        </header>
 
-        <div
-          className="
-            grid min-h-0 flex-1 grid-cols-[1fr_auto_1fr]
-            gap-[clamp(0.35rem,1vw,1rem)] px-[clamp(0.45rem,1.6vw,1.1rem)]
-            pb-[clamp(0.45rem,1.5svh,0.9rem)]
-          "
-        >
-          <section
-            className="
-              grid min-h-0 min-w-0 grid-cols-[0.82fr_1.18fr] grid-rows-2
-              items-center gap-x-[clamp(0.35rem,1.2vw,1rem)] gap-y-[clamp(0.3rem,1svh,0.7rem)]
-              pl-[clamp(0.1rem,0.8vw,0.7rem)]
-            "
-          >
-            <div className="self-start justify-self-start pt-[clamp(0.1rem,1svh,0.55rem)]">
-              <RoundLabel action="ls_button" onSend={send}>
-                LS
-              </RoundLabel>
-            </div>
+          <Positioned className="left-[20%] top-[29%]">
+            <DPad onSend={send} />
+          </Positioned>
 
-            <div className="flex min-h-0 min-w-0 items-center justify-center">
-              <DPad onSend={send} />
-            </div>
+          <Positioned className="left-[7.5%] top-[43%]">
+            <RoundLabel action="ls_button" onSend={send}>
+              LS
+            </RoundLabel>
+          </Positioned>
 
-            <div className="flex min-h-0 min-w-0 items-center justify-center">
-              <Stick
-                name="left"
-                onSend={send}
-                className="w-[clamp(6.8rem,32svh,12rem)]"
-              />
-            </div>
+          <Positioned className="left-[15%] top-[72%]">
+            <Stick
+              name="left"
+              onSend={send}
+              className="w-[clamp(6.3rem,31svh,11.7rem)]"
+            />
+          </Positioned>
 
-            <div className="flex min-h-0 min-w-0 items-center justify-center gap-[clamp(0.35rem,1.1vw,0.8rem)]">
+          <Positioned className="left-[34%] top-[68%]">
+            <div className="flex flex-col gap-[clamp(0.45rem,1.6svh,0.8rem)]">
               <RoundLabel action="lb" onSend={send}>
                 LB
               </RoundLabel>
@@ -491,42 +478,38 @@ export default function App() {
                 LT
               </RoundLabel>
             </div>
-          </section>
+          </Positioned>
 
-          <section className="flex w-[clamp(4.75rem,12vw,7rem)] min-h-0 flex-col items-center justify-center gap-[clamp(0.4rem,1.8svh,0.8rem)]">
-            <CenterButton action="back" onSend={send}>
-              <ArrowLeft className="h-[55%] w-[55%]" />
-            </CenterButton>
-            <CenterButton action="home" onSend={send}>
-              <RotateCcw className="h-[55%] w-[55%]" />
-            </CenterButton>
-            <CenterButton action="play" onSend={send}>
-              <Play className="h-[55%] w-[55%] translate-x-[3%]" />
-            </CenterButton>
-          </section>
-
-          <section
-            className="
-              grid min-h-0 min-w-0 grid-cols-[0.82fr_1.18fr] grid-rows-2
-              items-center gap-x-[clamp(0.35rem,1.2vw,1rem)] gap-y-[clamp(0.3rem,1svh,0.7rem)]
-              pr-[clamp(0.35rem,1.6vw,1.2rem)]
-            "
-          >
-            <div className="self-start justify-self-end pt-[clamp(0.1rem,1svh,0.55rem)]">
-              <RoundLabel action="rs_button" onSend={send}>
-                RS
-              </RoundLabel>
+          <Positioned className="left-1/2 top-[43%]">
+            <div className="flex items-center justify-center gap-[clamp(0.55rem,1.7vw,1.05rem)]">
+              <CenterButton action="back" label="Back" onSend={send}>
+                <ArrowLeft className="h-[55%] w-[55%]" />
+              </CenterButton>
+              <CenterButton action="home" label="Home" onSend={send}>
+                <RotateCcw className="h-[55%] w-[55%]" />
+              </CenterButton>
+              <CenterButton action="play" label="Play" onSend={send}>
+                <Play className="h-[55%] w-[55%] translate-x-[3%]" />
+              </CenterButton>
             </div>
+          </Positioned>
 
-            <div className="flex min-h-0 min-w-0 items-center justify-center">
-              <Stick
-                name="right"
-                onSend={send}
-                className="w-[clamp(6.8rem,32svh,12rem)]"
-              />
-            </div>
+          <Positioned className="left-[72%] top-[29%]">
+            <Stick
+              name="right"
+              onSend={send}
+              className="w-[clamp(6.3rem,31svh,11.7rem)]"
+            />
+          </Positioned>
 
-            <div className="flex min-h-0 min-w-0 items-center justify-center gap-[clamp(0.35rem,1.1vw,0.8rem)]">
+          <Positioned className="left-[92.5%] top-[43%]">
+            <RoundLabel action="rs_button" onSend={send}>
+              RS
+            </RoundLabel>
+          </Positioned>
+
+          <Positioned className="left-[68.5%] top-[68%]">
+            <div className="flex flex-col gap-[clamp(0.45rem,1.6svh,0.8rem)]">
               <RoundLabel action="rb" onSend={send}>
                 RB
               </RoundLabel>
@@ -534,11 +517,11 @@ export default function App() {
                 RT
               </RoundLabel>
             </div>
+          </Positioned>
 
-            <div className="flex min-h-0 min-w-0 items-center justify-center">
-              <ActionButtons onSend={send} />
-            </div>
-          </section>
+          <Positioned className="left-[84%] top-[69%]">
+            <ActionButtons onSend={send} />
+          </Positioned>
         </div>
       </div>
     </main>
