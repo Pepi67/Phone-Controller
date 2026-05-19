@@ -2,63 +2,386 @@
 <html>
 <head>
   <title>Phone Controller</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
   <style>
-    body {
-      background: #111;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 30px;
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: none;
+    }
+
+    html, body {
       margin: 0;
-    }
-
-    button {
-      width: 120px;
-      height: 80px;
-      margin: 10px;
-      font-size: 28px;
-      border: none;
-      border-radius: 18px;
-      background: #333;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #202020, #070707);
+      font-family: Arial, sans-serif;
       color: white;
     }
 
-    button:active {
-      background: #777;
-      transform: scale(0.95);
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .controller {
+      width: min(100vw, 1000px);
+      height: min(100vh, 560px);
+      padding: 20px;
+      display: grid;
+      grid-template-rows: 70px 1fr 140px;
+      gap: 12px;
+    }
+
+    .top-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 14px;
+    }
+
+    .middle {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr 1fr;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 160px;
+      padding: 0 120px;
+    }
+
+    .control {
+      border: none;
+      color: white;
+      background: linear-gradient(145deg, #2f2f35, #17171b);
+      box-shadow:
+        inset 0 0 10px rgba(255,255,255,0.05),
+        0 8px 20px rgba(0,0,0,0.55);
+      border-radius: 24px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .control.active {
+      transform: scale(0.94);
+      background: linear-gradient(145deg, #62626d, #2d2d33);
+      box-shadow:
+        inset 0 0 18px rgba(255,255,255,0.15),
+        0 2px 8px rgba(0,0,0,0.5);
+    }
+
+    .shoulder {
+      height: 62px;
+      border-radius: 22px;
+      font-size: 20px;
+    }
+
+    .dpad {
+      display: grid;
+      grid-template-columns: 78px 78px 78px;
+      grid-template-rows: 78px 78px 78px;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .dpad .up {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .dpad .left {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .dpad .center {
+      grid-column: 2;
+      grid-row: 2;
+      background: #151515;
+      box-shadow: inset 0 0 12px rgba(0,0,0,0.8);
+    }
+
+    .dpad .right {
+      grid-column: 3;
+      grid-row: 2;
+    }
+
+    .dpad .down {
+      grid-column: 2;
+      grid-row: 3;
+    }
+
+    .dpad button {
+      width: 78px;
+      height: 78px;
+      border-radius: 18px;
+    }
+
+    .center-panel {
+      display: grid;
+      grid-template-rows: 70px 110px 60px;
+      gap: 14px;
+      align-items: center;
+      justify-items: center;
+    }
+
+    .menu-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1.7fr 1fr;
+      gap: 14px;
+    }
+
+    .small-button {
+      height: 48px;
+      border-radius: 24px;
+      font-size: 15px;
+    }
+
+    .touchpad {
+      width: 100%;
+      height: 110px;
+      border-radius: 28px;
+      background: linear-gradient(145deg, #28282e, #101014);
+      border: 2px solid rgba(255,255,255,0.08);
+      font-size: 18px;
+      letter-spacing: 1px;
+    }
+
+    .ps-button {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      font-size: 22px;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 78px 78px 78px;
+      grid-template-rows: 78px 78px 78px;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .actions .triangle {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .actions .square {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .actions .circle {
+      grid-column: 3;
+      grid-row: 2;
+    }
+
+    .actions .cross {
+      grid-column: 2;
+      grid-row: 3;
+    }
+
+    .actions button {
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      font-size: 28px;
+    }
+
+    .stick {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      justify-self: center;
+      background:
+        radial-gradient(circle at 35% 30%, #5a5a62, #24242a 48%, #0b0b0d 80%);
+      border: 8px solid #111;
+      font-size: 14px;
+      color: #cfcfcf;
+    }
+
+    .status {
+      position: fixed;
+      top: 10px;
+      left: 12px;
+      font-size: 13px;
+      color: #aaa;
+    }
+
+    @media (orientation: portrait) {
+      .controller {
+        transform: rotate(90deg);
+        width: 100vh;
+        height: 100vw;
+      }
+    }
+
+    @media (max-width: 750px) {
+      .controller {
+        grid-template-rows: 58px 1fr 105px;
+        padding: 12px;
+      }
+
+      .middle {
+        gap: 12px;
+      }
+
+      .bottom-row {
+        gap: 90px;
+        padding: 0 70px;
+      }
+
+      .dpad,
+      .actions {
+        grid-template-columns: 62px 62px 62px;
+        grid-template-rows: 62px 62px 62px;
+      }
+
+      .dpad button,
+      .actions button {
+        width: 62px;
+        height: 62px;
+        font-size: 22px;
+      }
+
+      .stick {
+        width: 90px;
+        height: 90px;
+      }
+
+      .touchpad {
+        height: 85px;
+      }
     }
   </style>
 </head>
+
 <body>
-  <h1>Phone Controller</h1>
+  <div class="status" id="status">Connecting...</div>
 
-  <div>
-    <button onclick="sendCommand('up')">↑</button>
-  </div>
+  <main class="controller">
+    <section class="top-row">
+      <button class="control shoulder" data-action="l1">L1</button>
+      <button class="control shoulder" data-action="l2">L2</button>
+      <button class="control shoulder" data-action="r2">R2</button>
+      <button class="control shoulder" data-action="r1">R1</button>
+    </section>
 
-  <div>
-    <button onclick="sendCommand('left')">←</button>
-    <button onclick="sendCommand('down')">↓</button>
-    <button onclick="sendCommand('right')">→</button>
-  </div>
+    <section class="middle">
+      <div class="dpad">
+        <button class="control up" data-action="up">▲</button>
+        <button class="control left" data-action="left">◀</button>
+        <button class="center" disabled></button>
+        <button class="control right" data-action="right">▶</button>
+        <button class="control down" data-action="down">▼</button>
+      </div>
 
-  <div>
-    <button onclick="sendCommand('a')">A</button>
-    <button onclick="sendCommand('b')">B</button>
-  </div>
+      <div class="center-panel">
+        <div class="menu-row">
+          <button class="control small-button" data-action="share">SHARE</button>
+          <button class="control small-button" data-action="mute">MUTE</button>
+          <button class="control small-button" data-action="options">OPTIONS</button>
+        </div>
+
+        <button class="control touchpad" data-action="touchpad">TOUCHPAD</button>
+
+        <button class="control ps-button" data-action="home">⌂</button>
+      </div>
+
+      <div class="actions">
+        <button class="control triangle" data-action="triangle">△</button>
+        <button class="control square" data-action="square">□</button>
+        <button class="control circle" data-action="circle">○</button>
+        <button class="control cross" data-action="cross">×</button>
+      </div>
+    </section>
+
+    <section class="bottom-row">
+      <button class="control stick" data-action="left_stick">L3</button>
+      <button class="control stick" data-action="right_stick">R3</button>
+    </section>
+  </main>
 
   <script src="/socket.io/socket.io.js"></script>
+
   <script>
     const socket = io();
+    const pressedButtons = new Set();
+    const statusText = document.getElementById("status");
 
-    function sendCommand(action) {
+    socket.on("connect", () => {
+      statusText.textContent = "Connected";
+    });
+
+    socket.on("disconnect", () => {
+      statusText.textContent = "Disconnected";
+    });
+
+    function sendCommand(action, state) {
       socket.emit("control", {
-        action: action,
+        action,
+        state,
+        pressed: Array.from(pressedButtons),
         time: Date.now()
       });
     }
+
+    function pressButton(button, pointerId) {
+      const action = button.dataset.action;
+
+      button.setPointerCapture(pointerId);
+
+      if (!pressedButtons.has(action)) {
+        pressedButtons.add(action);
+        button.classList.add("active");
+        sendCommand(action, "pressed");
+      }
+    }
+
+    function releaseButton(button) {
+      const action = button.dataset.action;
+
+      if (pressedButtons.has(action)) {
+        pressedButtons.delete(action);
+        button.classList.remove("active");
+        sendCommand(action, "released");
+      }
+    }
+
+    document.querySelectorAll(".control").forEach((button) => {
+      button.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        pressButton(button, event.pointerId);
+      });
+
+      button.addEventListener("pointerup", (event) => {
+        event.preventDefault();
+        releaseButton(button);
+      });
+
+      button.addEventListener("pointercancel", (event) => {
+        event.preventDefault();
+        releaseButton(button);
+      });
+
+      button.addEventListener("lostpointercapture", () => {
+        releaseButton(button);
+      });
+    });
+
+    window.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+    });
   </script>
 </body>
 </html>
