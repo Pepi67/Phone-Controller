@@ -152,7 +152,7 @@ Vite will show something like:
 
 ```text
 Local:   http://localhost:5173/
-Network: http://192.168.0.138:5173/
+Network: http://192.000.0.000:5173/
 ```
 
 Open the **Network** URL on your phone:
@@ -164,7 +164,7 @@ http://YOUR_PC_IP:5173
 Example:
 
 ```text
-http://192.168.0.138:5173
+http://192.164.0.124:5173
 ```
 
 Do not use `localhost` on your phone. On the phone, `localhost` means the phone itself, not your PC.
