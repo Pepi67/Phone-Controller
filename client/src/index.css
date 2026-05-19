@@ -19,16 +19,17 @@
   touch-action: none;
 }
 
-html,
-body,
-#root {
-  width: 100%;
-  height: 100%;
-  min-height: 100svh;
-  margin: 0;
-  padding: 0;
+html:fullscreen,
+body:fullscreen,
+#root:fullscreen {
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
-  background: #050505;
+  background: #000;
+}
+
+:fullscreen {
+  background: #000;
 }
 
 body {

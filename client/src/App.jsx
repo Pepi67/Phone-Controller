@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   RotateCcw,
   Play,
+  Maximize,
 } from "lucide-react";
 
 const SOCKET_URL = `${window.location.protocol}//${window.location.hostname}:3000`;
@@ -238,9 +239,9 @@ function RoundLabel({ action, children, onSend }) {
       action={action}
       onSend={onSend}
       className="
-        aspect-square w-[clamp(3.2rem,9vh,5.4rem)]
+        aspect-square w-[clamp(2.8rem,7.5vh,4.5rem)]
         rounded-full
-        text-[clamp(1.5rem,5vh,3.2rem)]
+        text-[clamp(1.2rem,4vh,2.5rem)]
       "
     >
       {children}
@@ -272,6 +273,26 @@ export default function App() {
     });
   }
 
+  async function enterFullscreen() {
+  const element = document.documentElement;
+
+  try {
+    if (!document.fullscreenElement) {
+      await element.requestFullscreen();
+
+      if (screen.orientation?.lock) {
+        try {
+          await screen.orientation.lock("landscape");
+        } catch {}
+      }
+    } else {
+      await document.exitFullscreen();
+    }
+  } catch (error) {
+    console.log("Fullscreen failed:", error);
+  }
+}
+
   return (
     <main className="controller-safe-area h-[100svh] w-screen overflow-hidden bg-black text-white">
       <div className="hidden h-full w-full place-items-center bg-black p-8 text-center text-2xl font-bold portrait:grid">
@@ -293,37 +314,35 @@ export default function App() {
 
           {/* TOP BAR */}
           <div className="flex h-[14%] items-center justify-center gap-[clamp(1rem,4vw,4rem)]">
-            <ControllerButton
-              action="settings"
-              onSend={send}
-              className="aspect-square h-[55%] rounded-full"
-            >
-              <Settings className="h-[52%] w-[52%]" />
-            </ControllerButton>
+          <button
+            onClick={enterFullscreen}
+            className="
+              flex aspect-square h-[55%] items-center justify-center rounded-full
+              border border-white/25
+              bg-zinc-800
+              text-white
+              shadow-[0_8px_18px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.18)]
+              active:scale-90 active:bg-zinc-500
+            "
+          >
+            <Maximize className="h-[52%] w-[52%]" />
+          </button>
 
-            <ControllerButton
-              action="select"
-              onSend={send}
-              className="aspect-square h-[55%] rounded-full"
-            >
-              <Circle className="h-[48%] w-[48%]" />
-            </ControllerButton>
+          <ControllerButton
+            action="settings"
+            onSend={send}
+            className="aspect-square h-[55%] rounded-full"
+          >
+            <Settings className="h-[52%] w-[52%]" />
+          </ControllerButton>
 
-            <ControllerButton
-              action="start"
-              onSend={send}
-              className="aspect-square h-[55%] rounded-full"
+           <ControllerButton
+                action="wireless"
+                onSend={send}
+                className="aspect-square h-[55%] rounded-full"
             >
-              <Circle className="h-[48%] w-[48%]" />
-            </ControllerButton>
-
-            <ControllerButton
-              action="wireless"
-              onSend={send}
-              className="aspect-square h-[55%] rounded-full"
-            >
-              <Wifi className="h-[48%] w-[48%]" />
-            </ControllerButton>
+            <Wifi className="h-[48%] w-[48%]" />
+            </ControllerButton>         
           </div>
 
           {/* MAIN */}
@@ -345,7 +364,7 @@ export default function App() {
               <div />
 
               <div className="flex items-center justify-center">
-                <Stick name="left" onSend={send} className="w-[clamp(7rem,34vh,14rem)]" />
+                <Stick name="left" onSend={send} className="w-[clamp(6.5rem,29vh,11rem)]" />
               </div>
 
               <div />
@@ -390,11 +409,11 @@ export default function App() {
             </section>
 
             {/* RIGHT SIDE */}
-            <section className="grid h-full grid-cols-[0.8fr_1.1fr_0.7fr] grid-rows-2 items-center gap-[1vw]">
+            <section className="grid h-full grid-cols-[0.75fr_1fr_1.15fr] grid-rows-2 items-center gap-[1vw] pr-[2vw]">
               <div />
 
               <div className="flex items-center justify-center">
-                <Stick name="right" onSend={send} className="w-[clamp(7rem,34vh,14rem)]" />
+                <Stick name="right" onSend={send} className="w-[clamp(6.5rem,29vh,11rem)]" />
               </div>
 
               <div className="flex items-center justify-center">
@@ -415,7 +434,7 @@ export default function App() {
               <div />
 
               <div className="flex items-center justify-center">
-                <div className="w-[clamp(7rem,33vh,14rem)]">
+                  <div className="w-[clamp(6rem,28vh,10rem)]">
                   <ActionButtons onSend={send} />
                 </div>
               </div>
